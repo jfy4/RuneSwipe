@@ -5,7 +5,7 @@ A two-person multiplayer game, where two players act as witches/wizards.
 To battle they physically swipe on the phone screen pre-defined
 rune sigils to cast spells at their opponent. when the sigils are correctly
 traced out on the screen the spell is cast.  These sigils must be
-memorized before hand, but are stored in a convienient "tome" the
+memorized before battle, but are stored in a convienient "tome" the
 players can reference before their match.  Each spell has a different
 effect on the opponent, and the battle ends when the opponent is either
 out of "life", or "permanently immobile".  Experience points are gained
@@ -53,19 +53,22 @@ after each battle.
                   over level threasholds.  This also governs the skill tree---larger levels
 		  reveal more and new spells.
 ** Items
-   - Not a priority but it would also be nice to have gear the players can wear:
+   - the players can wear gear that affects their attributes:
      + Robes
      + wands
      + hats
      + etc.
-   - These items affect player attribues.
 ** Extras
    - Not a priority, but ideally each player can customize their appearance as well.
 
 * Practical Extras
 ** Data loading
    - Need some sort of way to import all the spells in the game, maybe a .csv
-   - Ideal lets just start with a couple simple spells to get it working.
+   - Ideally lets just start with a couple simple spells to get it working.
 ** Networking
    - Need to set it up so that players can play one another over the internet
-   - I assume this is difficult, and can be saved till later.
+   - I assume this is difficult, and can be saved till later if so.
+
+
+
+Can you write the code to make this game please?

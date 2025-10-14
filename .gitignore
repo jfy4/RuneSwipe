@@ -1,0 +1,26 @@
+# === Android / Gradle build ===
+/build/
+*/build/
+.gradle/
+local.properties
+key.properties
+
+# === IDE (Android Studio / IntelliJ) ===
+.idea/
+*.iml
+
+# === Output / APKs ===
+*.apk
+*.aab
+
+# === Logs ===
+*.log
+
+# === OS / Editor junk ===
+.DS_Store
+Thumbs.db
+~$*
+*.~undo-tree~
+
+# === Optional: if you use Kotlin symbolic links or temp folders ===
+*.tmp
