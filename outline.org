@@ -11,6 +11,19 @@ effect on the opponent, and the battle ends when the opponent is either
 out of "life", or "permanently immobile".  Experience points are gained
 after each battle.
 
+* Menu
+I would like four big buttons on the startup screen:
+** Battle
+   - This takes the player to the screen where they battle
+** Wizard
+   - This takes the player to a screen showing the appearance and
+     attributes of their wizard, as well as their items.
+** Tome
+   - This takes the player to a page showing the spells they know
+     and how to cast them, as well as the spell tree.
+** Exit
+   - This button closes the app.
+
 * Main mechanic
   - tracing or swiping rune sigils on the phone touchscreen to cast the spell
   - Each spell performs a different action for example:
@@ -38,6 +51,11 @@ after each battle.
    - Every players has a tome which lists the rune sigils they know how to cast.
    - The tome also acts as a skill tree, revealing new spells as more experience is
      gained.
+
+** Start:
+   To start, the players should have two spells:
+   - Fireball: drawn with a circle clockwise.  Deals 5 damage.
+   - Heal    : drawn with a cross, swiping down first, then swiping right.  Heals 6 life.
 
 * Players
 ** Attributes
@@ -71,4 +89,4 @@ after each battle.
 
 
 
-Can you write the code to make this game please?
+Can you make a minimal working model for this game please?
