@@ -56,9 +56,9 @@ data class RuneTemplate(
 )
 
 object DollarOneRecognizer {
-    private const val N = 64
+    private const val N = 96
     private const val SIZE = 250f
-    private const val ANGLE_RANGE = Math.PI / 4 // ±45°
+    private const val ANGLE_RANGE = Math.PI / 2 // ±90°
     private const val ANGLE_STEP = Math.PI / 90 // 2°
 
     fun recognize(candidate: List<Point>, templates: List<RuneTemplate>): Pair<RuneTemplate?, Double> {

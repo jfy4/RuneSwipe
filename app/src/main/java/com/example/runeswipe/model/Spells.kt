@@ -6,29 +6,75 @@ package com.example.runeswipe.model
 // Sample rune templates (very simplified shapes). In a real game you'd define
 // richer point paths or load from CSV.
 object Runes {
+
+    // Counter-clockwise circle
     val CircleCCW = RuneTemplate(
         id = "circle_ccw",
         name = "Circle (CCW)",
         points = (0..360 step 15).map { deg ->
             val rad = Math.toRadians(deg.toDouble())
-            // CCW circle centered near (0.5,0.5) in unit square then scaled
-            Point((0.5 + 0.4 * kotlin.math.cos(rad)).toFloat(), (0.5 + 0.4 * kotlin.math.sin(rad)).toFloat())
+            Point(
+                (0.5 + 0.4 * kotlin.math.cos(rad)).toFloat(),
+                (0.5 + 0.4 * kotlin.math.sin(rad)).toFloat()
+            )
         }
     )
 
+    // Clockwise circle (just reverse angle)
+    val CircleCW = RuneTemplate(
+        id = "circle_cw",
+        name = "Circle (CW)",
+        points = (0..360 step 15).map { deg ->
+            val rad = Math.toRadians(360 - deg.toDouble())
+            Point(
+                (0.5 + 0.4 * kotlin.math.cos(rad)).toFloat(),
+                (0.5 + 0.4 * kotlin.math.sin(rad)).toFloat()
+            )
+        }
+    )
+
+    // Plus-shaped cross (vertical stroke then horizontal stroke)
     val Cross = RuneTemplate(
         id = "cross",
         name = "Cross",
         points = buildList {
-            // Vertical line
-            for (t in 0..10) add(Point(0.5f, 0.1f + 0.8f * (t / 10f)))
-            // Move & Horizontal line
-            for (t in 0..10) add(Point(0.1f + 0.8f * (t / 10f), 0.5f))
+            // vertical stroke
+            for (y in 0..100 step 10) add(Point(0.5f, y / 100f))
+            // center connect
+            add(Point(0.5f, 0.5f))
+            // horizontal stroke
+            for (x in 0..100 step 10) add(Point(x / 100f, 0.5f))
         }
     )
 
-    val All = listOf(CircleCCW, Cross)
+    val All = listOf(CircleCCW, CircleCW, Cross)
 }
+
+
+// object Runes {
+//     val CircleCCW = RuneTemplate(
+//         id = "circle_ccw",
+//         name = "Circle (CCW)",
+//         points = (0..360 step 15).map { deg ->
+//             val rad = Math.toRadians(deg.toDouble())
+//             // CCW circle centered near (0.5,0.5) in unit square then scaled
+//             Point((0.5 + 0.4 * kotlin.math.cos(rad)).toFloat(), (0.5 + 0.4 * kotlin.math.sin(rad)).toFloat())
+//         }
+//     )
+
+//     val Cross = RuneTemplate(
+//         id = "cross",
+//         name = "Cross",
+//         points = buildList {
+//             // Vertical line
+//             for (t in 0..10) add(Point(0.5f, 0.1f + 0.8f * (t / 10f)))
+//             // Move & Horizontal line
+//             for (t in 0..10) add(Point(0.1f + 0.8f * (t / 10f), 0.5f))
+//         }
+//     )
+
+//     val All = listOf(CircleCCW, Cross)
+// }
 
 object SpellsRepo {
     val Fireball = Spell(

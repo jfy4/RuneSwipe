@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.runeswipe.model.*
 import kotlin.math.max
+import android.util.Log
 
 @Composable
 fun BattleScreen(player: Player, enemy: Player) {
@@ -58,10 +59,26 @@ fun BattleScreen(player: Player, enemy: Player) {
 			onDrag = { change, _ ->
 			    val gestureAreaSize = Size(this.size.width.toFloat(), this.size.height.toFloat())
 			    stroke += change.position.toPoint(gestureAreaSize)
+			    change.consume()   // ensures continuous updates
 			},
 			onDragEnd = {
 			    // Recognizer code goes here
 			    val gestureAreaSize = Size(this.size.width.toFloat(), this.size.height.toFloat())
+			    Log.d("RuneSwipe", "Stroke captured: ${stroke.size} points")
+			    val (template, distance) = DollarOneRecognizer.recognize(stroke.toList(), Runes.All)
+			    Log.d("RuneSwipe", "Recognized: ${template?.name ?: "none"}  distance=$distance")
+			    
+			    val match = if (distance < 60.0) template else null  // threshold control
+			    
+			    if (match != null) {
+				log = "You cast ${match.name}! (match distance = ${"%.2f".format(distance)})"
+			    } else {
+				log = "No rune recognized (distance = ${"%.2f".format(distance)})"
+			    }
+			    // val (template, distance) = DollarOneRecognizer.recognize(stroke.toList(), Runes.All)
+			    // Log.d("RuneSwipe", "Best match: ${template?.name ?: "none"}  distance=$distance")
+
+
 			    // (you don’t actually need to use it again here unless you reference size)
 			}
 		    )
