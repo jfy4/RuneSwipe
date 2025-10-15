@@ -25,6 +25,9 @@ import androidx.compose.ui.unit.dp
 import com.example.runeswipe.model.*
 import kotlin.math.max
 import android.util.Log
+import android.os.Handler
+import android.os.Looper
+
 
 @Composable
 fun BattleScreen(player: Player, enemy: Player) {
@@ -35,6 +38,11 @@ fun BattleScreen(player: Player, enemy: Player) {
     // Gesture state
     val stroke = remember { mutableStateListOf<Point>() }
     var lastCast by remember { mutableStateOf<Spell?>(null) }
+    val pendingStrokes = remember { mutableStateListOf<List<Point>>() }
+    val handler = remember { Handler(Looper.getMainLooper()) }
+    var lastStrokeTime by remember { mutableStateOf(0L) }
+    val gestureTimeout = 1000L // ms
+
 
     Column(
         Modifier.fillMaxSize().padding(16.dp),
@@ -50,39 +58,51 @@ fun BattleScreen(player: Player, enemy: Player) {
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
 		.pointerInput(Unit) {
+		    // Compute this once here — it's valid for all callbacks
+		    val gestureAreaSize = Size(this.size.width.toFloat(), this.size.height.toFloat())
+		    
 		    detectDragGestures(
 			onDragStart = { offset ->
-			    val gestureAreaSize = Size(this.size.width.toFloat(), this.size.height.toFloat())
 			    stroke.clear()
 			    stroke += offset.toPoint(gestureAreaSize)
 			},
 			onDrag = { change, _ ->
-			    val gestureAreaSize = Size(this.size.width.toFloat(), this.size.height.toFloat())
 			    stroke += change.position.toPoint(gestureAreaSize)
-			    change.consume()   // ensures continuous updates
+			    change.consume()
 			},
 			onDragEnd = {
-			    // Recognizer code goes here
-			    val gestureAreaSize = Size(this.size.width.toFloat(), this.size.height.toFloat())
-			    Log.d("RuneSwipe", "Stroke captured: ${stroke.size} points")
-			    val (template, distance) = DollarOneRecognizer.recognize(stroke.toList(), Runes.All)
-			    Log.d("RuneSwipe", "Recognized: ${template?.name ?: "none"}  distance=$distance")
+			    // Save current stroke
+			    pendingStrokes += stroke.toList()
+			    stroke.clear()
+			    lastStrokeTime = System.currentTimeMillis()
 			    
-			    val match = if (distance < 60.0) template else null  // threshold control
+			    // Cancel any previous recognition callbacks
+			    handler.removeCallbacksAndMessages(null)
 			    
-			    if (match != null) {
-				log = "You cast ${match.name}! (match distance = ${"%.2f".format(distance)})"
-			    } else {
-				log = "No rune recognized (distance = ${"%.2f".format(distance)})"
-			    }
-			    // val (template, distance) = DollarOneRecognizer.recognize(stroke.toList(), Runes.All)
-			    // Log.d("RuneSwipe", "Best match: ${template?.name ?: "none"}  distance=$distance")
-
-
-			    // (you don’t actually need to use it again here unless you reference size)
+			    // Schedule recognition after timeout
+			    handler.postDelayed({
+						    val elapsed = System.currentTimeMillis() - lastStrokeTime
+						    if (elapsed >= gestureTimeout && pendingStrokes.isNotEmpty()) {
+							if (!NRecognizer.isGestureComplete(pendingStrokes.toList())) {
+							    log = "Gesture incomplete (${pendingStrokes.size} strokes)"
+							    pendingStrokes.clear()
+							    return@postDelayed
+							}
+							val (template, distance) = NRecognizer.recognize(pendingStrokes.toList(), Runes.All)
+							Log.d("RuneSwipe", "Recognized: ${template?.name ?: "none"}  dist=$distance")
+							
+							if (template != null && distance < 120.0) {
+							    log = "You cast ${template.name}! (d=${"%.1f".format(distance)})"
+							    pendingStrokes.clear()
+							} else {
+							    log = "No rune recognized. (${pendingStrokes.size} strokes)"
+							}
+						    }
+						}, gestureTimeout)
 			}
 		    )
 		}
+	    
         ) {
             // Draw current stroke
             Canvas(Modifier.fillMaxSize()) {
