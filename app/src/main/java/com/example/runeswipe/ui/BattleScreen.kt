@@ -83,20 +83,29 @@ fun BattleScreen(player: Player, enemy: Player) {
 			    handler.postDelayed({
 						    val elapsed = System.currentTimeMillis() - lastStrokeTime
 						    if (elapsed >= gestureTimeout && pendingStrokes.isNotEmpty()) {
-							if (!NRecognizer.isGestureComplete(pendingStrokes.toList())) {
-							    log = "Gesture incomplete (${pendingStrokes.size} strokes)"
-							    pendingStrokes.clear()
-							    return@postDelayed
-							}
-							val (template, distance) = NRecognizer.recognize(pendingStrokes.toList(), Runes.All)
-							Log.d("RuneSwipe", "Recognized: ${template?.name ?: "none"}  dist=$distance")
+							// if (!NRecognizer.isGestureComplete(pendingStrokes.toList())) {
+							//     log = "Gesture incomplete (${pendingStrokes.size} strokes)"
+							//     pendingStrokes.clear()
+							//     return@postDelayed
+							// }
+							val predicted = RuneModel.predict(pendingStrokes.toList())
+							Log.d("RuneSwipe", "ONNX prediction: $predicted")
 							
-							if (template != null && distance < 120.0) {
-							    log = "You cast ${template.name}! (d=${"%.1f".format(distance)})"
+							if (predicted != null) {
+							    log = "You cast $predicted!"
 							    pendingStrokes.clear()
 							} else {
-							    log = "No rune recognized. (${pendingStrokes.size} strokes)"
+							    log = "No rune recognized."
 							}
+							// val (template, distance) = NRecognizer.recognize(pendingStrokes.toList(), Runes.All)
+							// Log.d("RuneSwipe", "Recognized: ${template?.name ?: "none"}  dist=$distance")
+							
+							// if (template != null && distance < 120.0) {
+							//     log = "You cast ${template.name}! (d=${"%.1f".format(distance)})"
+							//     pendingStrokes.clear()
+							// } else {
+							//     log = "No rune recognized. (${pendingStrokes.size} strokes)"
+							// }
 						    }
 						}, gestureTimeout)
 			}

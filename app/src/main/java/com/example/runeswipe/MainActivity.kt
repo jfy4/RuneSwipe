@@ -22,6 +22,7 @@ import com.example.runeswipe.ui.theme.RuneTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+	RuneModel.load(this)
         super.onCreate(savedInstanceState)
         setContent {
             RuneTheme {

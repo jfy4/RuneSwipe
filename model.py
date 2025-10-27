@@ -1,5 +1,5 @@
 import os, json, torch, torch.nn as nn, torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 import numpy as np
 
 
@@ -142,8 +142,9 @@ class StrokeTransformer(nn.Module):
     
 # ---------- Train ----------
 # --- build splits ---
-from torch.utils.data import random_split, DataLoader
+root = "dataset"
 ds = RuneDataset(root)
+device = "cuda" if torch.cuda.is_available() else "cpu"
 val_frac = 0.2
 n_val = int(len(ds)*val_frac)
 n_train = len(ds) - n_val

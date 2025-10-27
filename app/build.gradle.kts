@@ -66,4 +66,8 @@ dependencies {
 
     // Navigation (for Tome ↔ Battle screens)
     implementation("androidx.navigation:navigation-compose:2.8.2")
+    
+    // ONNX
+    // implementation("com.microsoft.onnxruntime:onnxruntime-mobile:1.18.0")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
 }
