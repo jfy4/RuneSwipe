@@ -42,24 +42,51 @@ private fun RunePreview(spell: Spell) {
 	val secondaryColor = MaterialTheme.colorScheme.secondary
 	
 	Canvas(Modifier.fillMaxSize()) {
-	    val pts = spell.rune.points
-	    if (pts.isNotEmpty()) {
-		val path = Path()
-		val first = pts.first()
-		path.moveTo(first.x * size.width, first.y * size.height)
-		for (i in 1 until pts.size) {
-		    val p = pts[i]
-		    path.lineTo(p.x * size.width, p.y * size.height)
-		}
-		drawPath(path, color = primaryColor, alpha = 0.9f)
-		pts.forEach { p ->
-		    drawCircle(
-			color = secondaryColor,
-			radius = 4f,
-			center = Offset(p.x * size.width, p.y * size.height)
-		    )
+	    val strokes = spell.rune.strokes
+	    if (strokes.isNotEmpty()) {
+		for (stroke in strokes) {
+		    if (stroke.isEmpty()) continue
+
+		    val path = Path()
+		    val first = stroke.first()
+		    path.moveTo(first.x * size.width, first.y * size.height)
+		    for (i in 1 until stroke.size) {
+			val p = stroke[i]
+			path.lineTo(p.x * size.width, p.y * size.height)
+		    }
+
+		    // Draw the stroke path
+		    drawPath(path, color = primaryColor, alpha = 0.9f)
+
+		    // Draw anchor points
+		    stroke.forEach { p ->
+			drawCircle(
+			    color = secondaryColor,
+			    radius = 4f,
+			    center = Offset(p.x * size.width, p.y * size.height)
+			)
+		    }
 		}
 	    }
+
+	    // val pts = spell.rune.points
+	    // if (pts.isNotEmpty()) {
+	    // 	val path = Path()
+	    // 	val first = pts.first()
+	    // 	path.moveTo(first.x * size.width, first.y * size.height)
+	    // 	for (i in 1 until pts.size) {
+	    // 	    val p = pts[i]
+	    // 	    path.lineTo(p.x * size.width, p.y * size.height)
+	    // 	}
+	    // 	drawPath(path, color = primaryColor, alpha = 0.9f)
+	    // 	pts.forEach { p ->
+	    // 	    drawCircle(
+	    // 		color = secondaryColor,
+	    // 		radius = 4f,
+	    // 		center = Offset(p.x * size.width, p.y * size.height)
+	    // 	    )
+	    // 	}
+	    // }
 	}
         // Canvas(Modifier.fillMaxSize()) {
         //     val pts = spell.rune.points

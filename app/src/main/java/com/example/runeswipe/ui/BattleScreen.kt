@@ -167,8 +167,14 @@ private fun computeDamage(attacker: Player, defender: Player, basePower: Int): I
     return max(1, atk - def / 2)
 }
 
-private fun Offset.toPoint(size: androidx.compose.ui.geometry.Size): Point =
-    Point(x / size.width, y / size.height)
+// private fun Offset.toPoint(size: androidx.compose.ui.geometry.Size): Point =
+//     Point(x / size.width, y / size.height)
+private fun Offset.toPoint(size: Size): Point =
+    Point(
+        x = x / size.width,
+        y = y / size.height,
+        t = System.currentTimeMillis().toFloat()
+    )
 
 private fun Point.toOffset(size: androidx.compose.ui.geometry.Size): Offset =
     Offset(x * size.width, y * size.height)
