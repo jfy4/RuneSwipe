@@ -1,5 +1,3 @@
-
-
 // ───────────────────────────────────────────────
 // app/src/main/java/com/example/runeswipe/model/RuneModel.kt
 // ───────────────────────────────────────────────
@@ -14,7 +12,7 @@ object RuneModel {
     private var env: OrtEnvironment? = null
     private var session: OrtSession? = null
     private var labels: List<String>? = null
-    private const val MAX_POINTS = 165  // must match training
+    private const val MAX_POINTS = 72  // must match training
 
     fun load(context: Context) {
         if (session != null) return
@@ -22,7 +20,7 @@ object RuneModel {
         val opts = OrtSession.SessionOptions()
         val modelBytes = context.assets.open("rune_seq.onnx").readBytes()
         session = env!!.createSession(modelBytes, opts)
-        labels = listOf("Fehu", "Unknown") // update for your dataset
+        labels = listOf("Fehu", "Lefu") // update for your dataset
     }
 
     fun predict(strokes: List<List<Point>>): String? {

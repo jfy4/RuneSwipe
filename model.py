@@ -242,7 +242,7 @@ print("Label2id:", ds.label2id)
 print("Num classes:", len(ds.label2id))
 # exit()
 device = "cuda" if torch.cuda.is_available() else "cpu"
-val_frac = 0.2
+val_frac = 0.1
 n_val = int(len(ds)*val_frac)
 n_train = len(ds) - n_val
 train_ds, val_ds = random_split(ds, [n_train, n_val], generator=torch.Generator().manual_seed(42))
