@@ -13,7 +13,7 @@ model.load_state_dict(ckpt["state_dict"])
 model.eval()
 
 # --- 3. Create a dummy input and export to ONNX ---
-MAX_POINTS = 72      # use the same value you trained with
+MAX_POINTS = 100      # use the same value you trained with, fixed at 100
 dummy = torch.zeros(1, MAX_POINTS, 4, dtype=torch.float32)
 
 torch.onnx.export(
