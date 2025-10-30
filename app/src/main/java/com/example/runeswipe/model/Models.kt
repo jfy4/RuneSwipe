@@ -68,7 +68,7 @@ data class Spell(
     val name: String,
     val type: SpellType,
     val power: Int,
-    val rune: RuneTemplate,
+    // val rune: RuneTemplate,
     val statusInflict: StatusEffect = StatusEffect.NONE,
 )
 
