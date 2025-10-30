@@ -49,13 +49,12 @@ RuneSwipe/
 │   ├── src/main/java/com/example/runeswipe/
 │   │   ├── model/              # Data models (Spell, Point, Stroke, etc.)
 │   │   ├── ui/                 # Compose UI components (RuneCanvas, TomeScreen, etc.)
-│   │   ├── viewmodel/          # Game state + gesture recognition logic
 │   │   └── MainActivity.kt     # App entry point
+│   │   
 │   ├── assets/                 # Saved rune datasets and trained model
 │   └── res/                    # UI resources (icons, strings, colors)
 ├── dataset/                    # JSON gesture data for training
 ├── model.py                    # Neural recognition model (Python)
-├── train.py                    # Training script for rune recognizer
 └── README.md                   # This file
 
 ````
