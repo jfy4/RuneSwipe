@@ -127,9 +127,16 @@ If you’d like to add new runes, improve the recognition model, or design new s
 
 ---
 
-## 🪶 License
+## ⚖️ Licensing
 
-This project is licensed under the **MIT License** – see the LICENSE file for details.
+RuneSwipe uses a **dual-license** model:
+
+- 🧩 **Code** (Kotlin & Python) is released under the [MIT License](LICENSE_CODE.txt) — free to use, modify, and redistribute.
+- 🎨 **Art, UI, and audio assets** are released under the [CC BY-NC 4.0 License](LICENSE_ASSETS.txt) — you may share or remix them non-commercially with attribution.
+
+**In short:**  
+Use, learn, and build on the code freely.  
+Please don’t sell or commercialize the game’s art, music, or rune designs without permission.
 
 ---
 
