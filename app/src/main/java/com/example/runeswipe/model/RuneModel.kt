@@ -8,6 +8,8 @@ import android.content.Context
 import java.nio.FloatBuffer
 import kotlin.math.max
 import kotlin.math.roundToInt
+import org.json.JSONArray
+import java.io.InputStream
 
 object RuneModel {
     private var env: OrtEnvironment? = null
@@ -21,7 +23,12 @@ object RuneModel {
         val opts = OrtSession.SessionOptions()
         val modelBytes = context.assets.open("rune_seq.onnx").readBytes()
         session = env!!.createSession(modelBytes, opts)
-        labels = listOf("Fehu", "Lefu") // update for your dataset
+        // Load labels from a JSON file
+        val labelsInputStream: InputStream = context.assets.open("labels.json")
+        val labelsJsonString = labelsInputStream.bufferedReader().use { it.readText() }
+        val jsonArray = JSONArray(labelsJsonString)
+        labels = List(jsonArray.length()) { jsonArray.getString(it) }
+        // labels = listOf("Fehu", "Lefu") // update for your dataset
     }
 
     fun predict(strokes: List<List<Point>>): String? {

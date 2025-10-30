@@ -1,5 +1,6 @@
 import torch
 from model import StrokeTransformer
+import json
 
 # --- 1. Load the trained model checkpoint ---
 ckpt = torch.load("artifacts/rune_seq.pt", map_location="cpu")
@@ -15,6 +16,12 @@ model.eval()
 # --- 3. Create a dummy input and export to ONNX ---
 MAX_POINTS = 100      # use the same value you trained with, fixed at 100
 dummy = torch.zeros(1, MAX_POINTS, 4, dtype=torch.float32)
+
+# --- 4. Save the labels to be loaded into kotlin
+# Save labels to JSON
+labels_file_path = "/home/judah/android_apps/RuneSwipe/app/src/main/assets/labels.json"
+with open(labels_file_path, 'w') as f:
+    json.dump(labels, f)
 
 torch.onnx.export(
     model,
