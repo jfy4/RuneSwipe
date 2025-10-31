@@ -24,3 +24,6 @@ Thumbs.db
 
 # === Optional: if you use Kotlin symbolic links or temp folders ===
 *.tmp
+
+# === Autosave ===
+*.*~
