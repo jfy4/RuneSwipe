@@ -103,6 +103,26 @@ fun BattleScreen(player: Player, enemy: Player) {
 						    log += " You recovered ${spell.power} HP."
 						}
 
+						SpellType.STATUS -> {
+						    // log += " The spell has no immediate effect."
+						    if (spell.statusInflict != StatusEffect.NONE) {
+							enemy.status = spell.statusInflict
+							log += " ${enemy.name} is ${spell.statusInflict.name.lowercase()}!"
+						    }
+						}
+
+						SpellType.DEFENSE -> {
+						    log += " The spell has no immediate effect."
+						}
+
+						SpellType.BUFF -> {
+						    log += " The spell has no immediate effect."
+						}
+
+						SpellType.DEBUFF -> {
+						    log += " The spell has no immediate effect."
+						}   
+
 						else -> {
 						    // For now, just log it — covers BUFF, DEBUFF, or unknown future types
 						    log += " The spell has no immediate effect."
