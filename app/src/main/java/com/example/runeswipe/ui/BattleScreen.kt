@@ -159,7 +159,7 @@ private fun Offset.toPoint(): Point =
 private fun computeDamage(attacker: Player, defender: Player, basePower: Int): Int {
     val atk = basePower + attacker.stats.strength
     val def = defender.stats.defense
-    return max(1, atk - def / 2)
+    return max(0, atk - def / 2)
 }
 // // ─────────────────────────────────────────────────────────────────────────────
 // // app/src/main/java/com/example/runeswipe/ui/BattleScreen.kt

@@ -11,7 +11,7 @@ import androidx.compose.runtime.setValue
 // ───────────────────────────────────────────────
 // Player stats and status
 // ───────────────────────────────────────────────
-enum class SpellType { ATTACK, DEFENSE, HEAL, STATUS }
+enum class SpellType { ATTACK, DEFENSE, HEAL, STATUS, BUFF, DEBUFF }
 enum class StatusEffect { NONE, POISON, SHIELD, IMMOBILE }
 
 data class Stats(
@@ -68,7 +68,7 @@ data class Spell(
     val name: String,
     val type: SpellType,
     val power: Int,
-    // val rune: RuneTemplate,
+    // val playerStatusInflict StatusEffect = StatusEffect.NONE,
     val statusInflict: StatusEffect = StatusEffect.NONE,
 )
 
