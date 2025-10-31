@@ -14,6 +14,7 @@ object SpellsRepo {
         name = "Fireball",
         type = SpellType.ATTACK,
         power = 6,
+	statusInflict = StatusEffect.BURNED,
     )
 
     val Heal = Spell(
