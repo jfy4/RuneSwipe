@@ -117,8 +117,8 @@ class RuneDataset(Dataset):
     def __getitem__(self, i):
         x = torch.tensor(load_trace(self.paths[i]))
         y = torch.tensor(self.labels[i])
-        # fname = os.path.basename(self.paths[i])
-        return x, y
+        fname = os.path.basename(self.paths[i])
+        return x, y, fname
 
     
 # ---------- Transformer ----------
@@ -134,78 +134,82 @@ class StrokeTransformer(nn.Module):
         h = self.enc(x)
         return self.cls(h.mean(1))
 
-    
-# ---------- Train ----------
-# --- build splits ---
-root = "dataset"
-ds = RuneDataset(root)
-print("Label2id:", ds.label2id)
-print("Num classes:", len(ds.label2id))
-# exit()
-device = "cuda" if torch.cuda.is_available() else "cpu"
-val_frac = 0.1
-n_val = int(len(ds)*val_frac)
-n_train = len(ds) - n_val
-train_ds, val_ds = random_split(ds, [n_train, n_val], generator=torch.Generator().manual_seed(42))
+if __name__ == "__main__":    
+    # ---------- Train ----------
+    # --- build splits ---
+    root = "dataset"
+    ds = RuneDataset(root)
+    print("Label2id:", ds.label2id)
+    print("Num classes:", len(ds.label2id))
+    # exit()
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    val_frac = 0.1
+    n_val = int(len(ds)*val_frac)
+    n_train = len(ds) - n_val
+    train_ds, val_ds = random_split(ds, [n_train, n_val], generator=torch.Generator().manual_seed(42))
 
-train_loader = DataLoader(train_ds, batch_size=16, shuffle=True)
-val_loader   = DataLoader(val_ds,   batch_size=32, shuffle=False)
+    train_loader = DataLoader(train_ds, batch_size=16, shuffle=True)
+    val_loader   = DataLoader(val_ds,   batch_size=32, shuffle=False)
 
-# --- model with a bit more regularization ---
-model = StrokeTransformer(num_classes=len(ds.label2id), d_model=96, nhead=3, depth=2).to(device)
+    # --- model with a bit more regularization ---
+    model = StrokeTransformer(num_classes=len(ds.label2id), d_model=96, nhead=3, depth=2).to(device)
 
 
-# label smoothing + weight decay helps
-lossf = torch.nn.CrossEntropyLoss(label_smoothing=0.1)
-opt = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
+    # label smoothing + weight decay helps
+    lossf = torch.nn.CrossEntropyLoss(label_smoothing=0.1)
+    opt = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
 
-best_val = -1
-patience, bad = 5, 0
+    best_val = -1
+    patience, bad = 10, 0
 
-for epoch in range(30):
-    # train
-    model.train()
-    correct = total = 0
-    for x,y in train_loader:
-        x,y = x.to(device), y.to(device)
-        opt.zero_grad()
-        logits = model(x)
-        loss = lossf(logits, y)
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-        opt.step()
-        pred = logits.argmax(1)
-        # for name, t, p in zip(fnames, y.tolist(), pred.tolist()):
-        #     true_label = list(ds.label2id.keys())[t]
-        #     pred_label = list(ds.label2id.keys())[p]
-        #     print(f"{name:20s}  true={true_label:10s}  pred={pred_label:10s}")
-        correct += (pred==y).sum().item(); total += y.size(0)
-    train_acc = correct/total
-
-    # validate
-    model.eval()
-    vcorrect = vtotal = 0
-    vloss_sum = 0.0
-    with torch.no_grad():
-        for x,y in val_loader:
+    for epoch in range(30):
+        # train
+        model.train()
+        correct = total = 0
+        for x,y,fnames in train_loader:
             x,y = x.to(device), y.to(device)
+            opt.zero_grad()
             logits = model(x)
-            vloss = lossf(logits, y)
-            vloss_sum += vloss.item()*y.size(0)
+            loss = lossf(logits, y)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            opt.step()
             pred = logits.argmax(1)
-            vcorrect += (pred==y).sum().item(); vtotal += y.size(0)
-    val_acc = vcorrect/vtotal
-    val_loss = vloss_sum/vtotal
-    print(f"ep {epoch+1:02d}  train_acc={train_acc:.3f}  val_acc={val_acc:.3f}  val_loss={val_loss:.3f}")
+            for name, t, p in zip(fnames, y.tolist(), pred.tolist()):
+                true_label = list(ds.label2id.keys())[t]
+                pred_label = list(ds.label2id.keys())[p]
+                print(f"{name:20s}  true={true_label:10s}  pred={pred_label:10s}")
+            correct += (pred==y).sum().item(); total += y.size(0)
+        train_acc = correct/total
+
+        # validate
+        model.eval()
+        vcorrect = vtotal = 0
+        vloss_sum = 0.0
+        with torch.no_grad():
+            for x,y,fnames in val_loader:
+                x,y = x.to(device), y.to(device)
+                logits = model(x)
+                vloss = lossf(logits, y)
+                vloss_sum += vloss.item()*y.size(0)
+                pred = logits.argmax(1)
+                vcorrect += (pred==y).sum().item(); vtotal += y.size(0)
+                for name, t, p in zip(fnames, y.tolist(), pred.tolist()):
+                    true_label = list(ds.label2id.keys())[t]
+                    pred_label = list(ds.label2id.keys())[p]
+                    print(f"{name:20s}  true={true_label:10s}  pred={pred_label:10s}")
+        val_acc = vcorrect/vtotal
+        val_loss = vloss_sum/vtotal
+        print(f"ep {epoch+1:02d}  train_acc={train_acc:.3f}  val_acc={val_acc:.3f}  val_loss={val_loss:.3f}")
 
 
-    # early stopping
-    if val_acc > best_val:
-        best_val = val_acc; bad = 0
-        torch.save({"state_dict":model.state_dict(),
-                    "labels": list(ds.label2id.keys())},
-                   "artifacts/rune_seq.pt")
-    else:
-        bad += 1
-        if bad >= patience:
-            print("Early stopping."); break
+        # early stopping
+        if val_acc > best_val:
+            best_val = val_acc; bad = 0
+            torch.save({"state_dict":model.state_dict(),
+                        "labels": list(ds.label2id.keys())},
+                       "artifacts/rune_seq.pt")
+        else:
+            bad += 1
+            if bad >= patience:
+                print("Early stopping."); break
