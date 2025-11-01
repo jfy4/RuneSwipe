@@ -81,11 +81,13 @@ fun BattleScreen(player: Player, enemy: Player) {
                             handler.postDelayed({
                                 val elapsed = System.currentTimeMillis() - lastStrokeTime
                                 if (elapsed >= gestureTimeout && pendingStrokes.isNotEmpty()) {
-                                    val predicted = RuneModel.predict(pendingStrokes.toList())
+                                    val predicted = RuneModel.predict(pendingStrokes.toList()) // Check if player knowns spell
                                     Log.d("RuneSwipe", "Prediction: $predicted")
-
                                     if (predicted != null) {
-                                        val spell = SpellsRepo.All.find { it.id == predicted }
+					val spell = if (player.knowsSpell(predicted)) {
+					    SpellTree.allSpells.find { it.id == predicted }
+					} else null
+                                        // val spell = SpellsRepo.All.find { it.id == predicted }
                                         if (spell != null) {
                                             log = "You cast ${spell.name}!"
 					    when (spell.type) {
