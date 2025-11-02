@@ -28,9 +28,18 @@ data class Player(
     val stats: Stats,
     var xp: Int = 0,
     var level: Int = 1,
-    var status: StatusEffect = StatusEffect.NONE
+    var status: StatusEffect = StatusEffect.NONE,
+    val knownSpellIds: MutableSet<String> = mutableSetOf("Fehu") // default: knows Fireball    
 ) {
     var cooldownMs by mutableStateOf(0L)
+
+    fun knowsSpell(spellId: String): Boolean = knownSpellIds.contains(spellId)
+
+    fun learnSpell(spell: Spell) {
+        if (!knownSpellIds.contains(spell.id) && SpellTree.canUnlock(this, spell.id)) {
+            knownSpellIds.add(spell.id)
+        }
+    }
 
     companion object {
         fun default(name: String) = Player(name, Stats())
