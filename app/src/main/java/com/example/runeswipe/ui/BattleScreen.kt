@@ -85,9 +85,11 @@ fun BattleScreen(player: Player, enemy: Player) {
                                     Log.d("RuneSwipe", "Prediction: $predicted")
                                     if (predicted != null) {
 					val spell = if (player.knowsSpell(predicted)) {
+					    Log.d("RuneSwipe", "Spell known")
 					    SpellTree.allSpells.find { it.id == predicted }
 					} else null
-                                        // val spell = SpellsRepo.All.find { it.id == predicted }
+					Log.d("RuneSwipe", "Predicted='$predicted' — Match=${spell?.id ?: "null"}")
+					Log.d("RuneSwipe", "All spell IDs: ${SpellTree.allSpells.map { it.id }}")
                                         if (spell != null) {
                                             log = "You cast ${spell.name}!"
 					    when (spell.type) {
@@ -106,9 +108,9 @@ fun BattleScreen(player: Player, enemy: Player) {
 						}
 
 						SpellType.STATUS -> {
-						    // log += " The spell has no immediate effect."
 						    if (spell.statusInflict != StatusEffect.NONE) {
 							enemy.status = spell.statusInflict
+							Log.d("RuneSwipe", "here")
 							log += " ${enemy.name} is ${spell.statusInflict.name.lowercase()}!"
 						    }
 						}

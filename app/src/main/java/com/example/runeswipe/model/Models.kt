@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 // Player stats and status
 // ───────────────────────────────────────────────
 enum class SpellType { ATTACK, DEFENSE, HEAL, STATUS, BUFF, DEBUFF }
-enum class StatusEffect { NONE, POISON, SHIELD, IMMOBILE, BURNED }
+enum class StatusEffect { NONE, POISONED, SHIELDED, IMMOBILIZED, BURNED }
 
 data class Stats(
     var life: Int = 30,
@@ -29,7 +29,7 @@ data class Player(
     var xp: Int = 0,
     var level: Int = 1,
     var status: StatusEffect = StatusEffect.NONE,
-    val knownSpellIds: MutableSet<String> = mutableSetOf("Fehu") // default: knows Fireball    
+    val knownSpellIds: MutableSet<String> = mutableSetOf("Fehu", "Venhu")
 ) {
     var cooldownMs by mutableStateOf(0L)
 
@@ -77,7 +77,6 @@ data class Spell(
     val name: String,
     val type: SpellType,
     val power: Int,
-    // val playerStatusInflict StatusEffect = StatusEffect.NONE,
     val statusInflict: StatusEffect = StatusEffect.NONE,
 )
 

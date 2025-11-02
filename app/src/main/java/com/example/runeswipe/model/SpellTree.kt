@@ -12,6 +12,7 @@ object SpellTree {
     val allSpells: List<Spell> = listOf(
         SpellsRepo.Fireball,
         SpellsRepo.Heal,
+	SpellsRepo.Poison
         // add others later...
     )
 

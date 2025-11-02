@@ -21,8 +21,17 @@ object SpellsRepo {
         id = "Lefu",
         name = "Healing Light",
         type = SpellType.HEAL,
-        power = 0,
+        power = 5,
     )
 
-    val All = listOf(Fireball, Heal)
+    val Poison = Spell(
+        id = "Venhu",
+        name = "Poison",
+        type = SpellType.STATUS,
+        power = 0,
+	statusInflict = StatusEffect.POISONED,
+    )
+
+
+    val All = listOf(Fireball, Heal, Poison)
 }
