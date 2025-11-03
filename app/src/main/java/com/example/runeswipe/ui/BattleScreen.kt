@@ -21,16 +21,37 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.runeswipe.model.*
+import com.example.runeswipe.util.applyStatusEffects
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import kotlin.math.max
+import kotlinx.coroutines.delay
 
 @Composable
 fun BattleScreen(player: Player, enemy: Player) {
     var log by remember { mutableStateOf("Trace a rune to cast a spell…") }
     var playerLife by remember { mutableStateOf(player.stats.life) }
     var enemyLife by remember { mutableStateOf(enemy.stats.life) }
+
+    // Periodic status effect ticking
+    LaunchedEffect(Unit) {
+	while (true) {
+            delay(2000L) // every 2 seconds
+            val enemyLog = applyStatusEffects(enemy)
+            val playerLog = applyStatusEffects(player)
+
+            if (enemyLog.isNotEmpty()) {
+		enemyLife = enemy.stats.life  // update UI life bar
+		log += "\n$enemyLog"
+            }
+            if (playerLog.isNotEmpty()) {
+		playerLife = player.stats.life
+		log += "\n$playerLog"
+            }
+	}
+    }
+
 
     // Gesture state
     val stroke = remember { mutableStateListOf<Point>() }
@@ -97,7 +118,9 @@ fun BattleScreen(player: Player, enemy: Player) {
 						    val dmg = computeDamage(player, enemy, spell.power)
 						    enemyLife = max(0, enemyLife - dmg)
 						    if (spell.statusInflict != StatusEffect.NONE) {
-							enemy.status = spell.statusInflict
+							enemy.status = StatusState(
+							    effect = spell.statusInflict)
+							// enemy.status = spell.statusInflict
 							log += " ${enemy.name} is ${spell.statusInflict.name.lowercase()}!"
 						    }
 						}
@@ -109,7 +132,9 @@ fun BattleScreen(player: Player, enemy: Player) {
 
 						SpellType.STATUS -> {
 						    if (spell.statusInflict != StatusEffect.NONE) {
-							enemy.status = spell.statusInflict
+							enemy.status = StatusState(
+							    effect = spell.statusInflict)
+							// enemy.status = spell.statusInflict
 							Log.d("RuneSwipe", "here")
 							log += " ${enemy.name} is ${spell.statusInflict.name.lowercase()}!"
 						    }
@@ -177,8 +202,10 @@ fun BattleScreen(player: Player, enemy: Player) {
             Button(onClick = {
                 playerLife = player.stats.life
                 enemyLife = enemy.stats.life
-		enemy.status = StatusEffect.NONE
-		player.status = StatusEffect.NONE
+		enemy.status = StatusState()
+		player.status = StatusState()
+		// enemy.status = StatusEffect.NONE
+		// player.status = StatusEffect.NONE
                 log = "Battle reset."
             }) { Text("Reset") }
         }
@@ -189,7 +216,7 @@ fun BattleScreen(player: Player, enemy: Player) {
 private fun LifeHud(
     name: String,
     life: Int,
-    status: StatusEffect,
+    status: StatusState,
     align: Alignment.Horizontal
 ) {
     Column(horizontalAlignment = align) {
@@ -205,7 +232,7 @@ private fun LifeHud(
         Text("$life / 30")
 
         // ── Status line ───────────────────────────
-        if (status != StatusEffect.NONE) {
+        if (status.effect != StatusEffect.NONE) {
             Text(
                 text = status.name.lowercase().replaceFirstChar { it.uppercase() },
                 style = MaterialTheme.typography.bodySmall,
