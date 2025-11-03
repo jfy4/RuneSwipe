@@ -234,7 +234,7 @@ private fun LifeHud(
         // ── Status line ───────────────────────────
         if (status.effect != StatusEffect.NONE) {
             Text(
-                text = status.name.lowercase().replaceFirstChar { it.uppercase() },
+                text = status.effect.displayName,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )
