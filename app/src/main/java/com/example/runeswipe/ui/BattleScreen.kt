@@ -28,8 +28,6 @@ import kotlin.math.min
 @Composable
 fun BattleScreen(player: Player, enemy: Player) {
     var log by remember { mutableStateOf("Trace a rune to cast a spell…") }
-    var playerLife by remember { mutableStateOf(player.stats.life) }
-    var enemyLife by remember { mutableStateOf(enemy.stats.life) }
 
     // Periodic status effect ticking
     LaunchedEffect(Unit) {
@@ -38,11 +36,9 @@ fun BattleScreen(player: Player, enemy: Player) {
             val enemyLog = applyStatusEffects(enemy)
             val playerLog = applyStatusEffects(player)
             if (enemyLog.isNotEmpty()) {
-                enemyLife = enemy.stats.life
                 log += "\n$enemyLog"
             }
             if (playerLog.isNotEmpty()) {
-                playerLife = player.stats.life
                 log += "\n$playerLog"
             }
         }
@@ -75,7 +71,7 @@ fun BattleScreen(player: Player, enemy: Player) {
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         // ─── Opponent HUD (top) ─────────────────────────────
-        LifeHud(enemy.name, enemyLife, enemy.status, Alignment.CenterHorizontally)
+        LifeHud(enemy, Alignment.CenterHorizontally)
 
         // ─── Rune Drawing Area ──────────────────────────────
         Box(
@@ -101,14 +97,14 @@ fun BattleScreen(player: Player, enemy: Player) {
                                         when (spell.type) {
                                             SpellType.ATTACK -> {
                                                 val dmg = computeDamage(player, enemy, spell.power)
-                                                enemyLife = max(0, enemyLife - dmg)
+                                                enemy.stats.life = max(0, enemy.stats.life - dmg)
                                                 if (spell.statusInflict != StatusEffect.NONE) {
                                                     enemy.status = StatusState(spell.statusInflict)
                                                     log += " ${enemy.name} is ${spell.statusInflict.name.lowercase()}!"
                                                 }
                                             }
                                             SpellType.HEAL -> {
-                                                playerLife = min(player.stats.life, playerLife + spell.power)
+                                                player.stats.life = min(player.stats.maxLife, player.stats.life + spell.power)
                                                 log += " You recovered ${spell.power} HP."
                                             }
                                             SpellType.STATUS -> {
@@ -179,7 +175,7 @@ fun BattleScreen(player: Player, enemy: Player) {
         }
 
         // ─── Player HUD (bottom) ────────────────────────────
-        LifeHud(player.name, playerLife, player.status, Alignment.CenterHorizontally)
+        LifeHud(player, Alignment.CenterHorizontally)
 
         // ─── Log and controls ───────────────────────────────
         Spacer(Modifier.height(8.dp))
@@ -189,36 +185,34 @@ fun BattleScreen(player: Player, enemy: Player) {
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
             Button(onClick = {
-                playerLife = player.stats.maxLife
-                enemyLife = enemy.stats.maxLife
-                player.status = StatusState()
-                enemy.status = StatusState()
-                currentStroke.clear()
-                allStrokes.clear()
-                lastStrokeTime = null
-                log = "Battle reset."
-            }) { Text("Reset") }
+                       player.stats.life = player.stats.maxLife
+                       enemy.stats.life = enemy.stats.maxLife
+                       player.status = StatusState()
+                       enemy.status = StatusState()
+                       currentStroke.clear()
+                       allStrokes.clear()
+                       lastStrokeTime = null
+                       log = "Battle reset."
+		   }) { Text("Reset") }
         }
     }
 }
 
 @Composable
 private fun LifeHud(
-    name: String,
-    life: Int,
-    status: StatusState,
+    player: Player,
     align: Alignment.Horizontal
 ) {
     Column(horizontalAlignment = align) {
-        Text(name, fontWeight = FontWeight.Bold)
+        Text(player.name, fontWeight = FontWeight.Bold)
         LinearProgressIndicator(
-            progress = animateFloatAsState(targetValue = life / 30f).value,
+            progress = animateFloatAsState(targetValue = player.stats.life / player.stats.maxLife.toFloat()).value,
             modifier = Modifier.width(200.dp).height(10.dp)
         )
-        Text("$life / 30")
-        if (status.effect != StatusEffect.NONE) {
+        Text("${player.stats.life} / ${player.stats.maxLife}")
+        if (player.status.effect != StatusEffect.NONE) {
             Text(
-                text = status.effect.displayName,
+                text = player.status.effect.displayName,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )
