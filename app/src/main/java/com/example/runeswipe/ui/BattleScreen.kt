@@ -189,8 +189,8 @@ fun BattleScreen(player: Player, enemy: Player) {
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
             Button(onClick = {
-                playerLife = player.stats.life
-                enemyLife = enemy.stats.life
+                playerLife = player.stats.maxLife
+                enemyLife = enemy.stats.maxLife
                 player.status = StatusState()
                 enemy.status = StatusState()
                 currentStroke.clear()

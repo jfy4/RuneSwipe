@@ -26,14 +26,22 @@ enum class StatusEffect(
     BURNED("Burned", 4, 5, "Takes fire damage.")
 }
 
-data class Stats(
-    var life: Int = 30,
+class Stats(
+    initialLife: Int = 30,
+    initialMaxLife: Int = 30,
     var strength: Int = 5,
     var defense: Int = 5,
     var constitution: Int = 5,
     var speed: Int = 5,
     var dexterity: Int = 5,
-)
+) {
+    var maxLife by mutableStateOf(initialMaxLife)
+    var life by mutableStateOf(initialLife)
+
+    // fun changeLife(delta: Int) {
+    //     life = (life + delta).coerceIn(0, maxLife)
+    // }
+}
 
 data class StatusState(
     val effect: StatusEffect = StatusEffect.NONE,
