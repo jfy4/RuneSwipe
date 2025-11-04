@@ -22,6 +22,7 @@ object SpellsRepo {
         name = "Healing Light",
         type = SpellType.HEAL,
         power = 5,
+	statusInflict = StatusEffect.NONE
     )
 
     val Poison = Spell(
