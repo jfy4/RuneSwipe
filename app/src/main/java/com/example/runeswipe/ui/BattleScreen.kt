@@ -1,12 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// app/src/main/java/com/example/runeswipe/ui/BattleScreen.kt
-// ─────────────────────────────────────────────────────────────────────────────
 package com.example.runeswipe.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -22,11 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.runeswipe.model.*
 import com.example.runeswipe.util.applyStatusEffects
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
-import kotlin.math.max
 import kotlinx.coroutines.delay
+import kotlin.math.max
+import kotlin.math.min
 
 @Composable
 fun BattleScreen(player: Player, enemy: Player) {
@@ -36,163 +33,155 @@ fun BattleScreen(player: Player, enemy: Player) {
 
     // Periodic status effect ticking
     LaunchedEffect(Unit) {
-	while (true) {
-            delay(2000L) // every 2 seconds
+        while (true) {
+            delay(2000L)
             val enemyLog = applyStatusEffects(enemy)
             val playerLog = applyStatusEffects(player)
-
             if (enemyLog.isNotEmpty()) {
-		enemyLife = enemy.stats.life  // update UI life bar
-		log += "\n$enemyLog"
+                enemyLife = enemy.stats.life
+                log += "\n$enemyLog"
             }
             if (playerLog.isNotEmpty()) {
-		playerLife = player.stats.life
-		log += "\n$playerLog"
+                playerLife = player.stats.life
+                log += "\n$playerLog"
             }
-	}
+        }
     }
 
+    // ─── Rune drawing state ─────────────────────────────────────────────
+    val currentStroke = remember { mutableStateListOf<Point>() }
+    val allStrokes = remember { mutableStateListOf<List<Point>>() }
 
-    // Gesture state
-    val stroke = remember { mutableStateListOf<Point>() }
-    val pendingStrokes = remember { mutableStateListOf<List<Point>>() }
-    val handler = remember { Handler(Looper.getMainLooper()) }
-    var lastStrokeTime by remember { mutableStateOf(0L) }
-    val gestureTimeout = 1000L // ms
+    var lastStrokeTime by remember { mutableStateOf<Long?>(null) }
+    val strokeTimeoutMs = 2000L // 2 seconds allowed between strokes
+
+    // Coroutine that checks for stroke timeout (fizzle)
+    LaunchedEffect(allStrokes.size, lastStrokeTime) {
+        lastStrokeTime?.let { start ->
+            delay(strokeTimeoutMs)
+            val elapsed = System.currentTimeMillis() - start
+            if (elapsed >= strokeTimeoutMs && allStrokes.isNotEmpty()) {
+                // Fizzle logic
+                allStrokes.clear()
+                currentStroke.clear()
+                lastStrokeTime = null
+                log = "Your mana fizzles out…"
+            }
+        }
+    }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // --- Opponent HUD (Top) ---
-        LifeHud(
-            name = enemy.name,
-            life = enemyLife,
-	    status = enemy.status,
-            align = Alignment.CenterHorizontally
-        )
+        // ─── Opponent HUD (top) ─────────────────────────────
+        LifeHud(enemy.name, enemyLife, enemy.status, Alignment.CenterHorizontally)
 
-        // --- Gesture Drawing Area ---
+        // ─── Rune Drawing Area ──────────────────────────────
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .background(
-                    MaterialTheme.colorScheme.surfaceVariant,
-                    RoundedCornerShape(16.dp)
-                )
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+                // handle double tap submission
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = {
+                            if (allStrokes.isNotEmpty()) {
+                                val predicted = RuneModel.predict(allStrokes.toList())
+                                Log.d("RuneSwipe", "Prediction: $predicted")
+
+                                if (predicted != null) {
+                                    val spell = if (player.knowsSpell(predicted)) {
+                                        SpellTree.allSpells.find { it.id == predicted }
+                                    } else null
+
+                                    if (spell != null) {
+                                        log = "You cast ${spell.name}!"
+                                        when (spell.type) {
+                                            SpellType.ATTACK -> {
+                                                val dmg = computeDamage(player, enemy, spell.power)
+                                                enemyLife = max(0, enemyLife - dmg)
+                                                if (spell.statusInflict != StatusEffect.NONE) {
+                                                    enemy.status = StatusState(spell.statusInflict)
+                                                    log += " ${enemy.name} is ${spell.statusInflict.name.lowercase()}!"
+                                                }
+                                            }
+                                            SpellType.HEAL -> {
+                                                playerLife = min(player.stats.life, playerLife + spell.power)
+                                                log += " You recovered ${spell.power} HP."
+                                            }
+                                            SpellType.STATUS -> {
+                                                if (spell.statusInflict != StatusEffect.NONE) {
+                                                    enemy.status = StatusState(spell.statusInflict)
+                                                    log += " ${enemy.name} is ${spell.statusInflict.name.lowercase()}!"
+                                                }
+                                            }
+                                            else -> {
+                                                log += " The spell has no immediate effect."
+                                            }
+                                        }
+                                    } else {
+                                        log = "Unknown spell."
+                                    }
+                                } else {
+                                    log = "No rune recognized."
+                                }
+                                // Clear after submission
+                                allStrokes.clear()
+                                currentStroke.clear()
+                                lastStrokeTime = null
+                            }
+                        }
+                    )
+                }
+                // handle drawing
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDragStart = { offset ->
-                            stroke.clear()
-                            stroke += offset.toPoint()
+                            currentStroke.clear()
+                            currentStroke += offset.toPoint()
                         },
                         onDrag = { change, _ ->
-                            stroke += change.position.toPoint()
+                            currentStroke += change.position.toPoint()
                             change.consume()
                         },
                         onDragEnd = {
-                            pendingStrokes += stroke.toList()
-                            stroke.clear()
-                            lastStrokeTime = System.currentTimeMillis()
-                            handler.removeCallbacksAndMessages(null)
-
-                            handler.postDelayed({
-                                val elapsed = System.currentTimeMillis() - lastStrokeTime
-                                if (elapsed >= gestureTimeout && pendingStrokes.isNotEmpty()) {
-                                    val predicted = RuneModel.predict(pendingStrokes.toList()) // Check if player knowns spell
-                                    Log.d("RuneSwipe", "Prediction: $predicted")
-                                    if (predicted != null) {
-					val spell = if (player.knowsSpell(predicted)) {
-					    Log.d("RuneSwipe", "Spell known")
-					    SpellTree.allSpells.find { it.id == predicted }
-					} else null
-					Log.d("RuneSwipe", "Predicted='$predicted' — Match=${spell?.id ?: "null"}")
-					Log.d("RuneSwipe", "All spell IDs: ${SpellTree.allSpells.map { it.id }}")
-                                        if (spell != null) {
-                                            log = "You cast ${spell.name}!"
-					    when (spell.type) {
-						SpellType.ATTACK -> {
-						    val dmg = computeDamage(player, enemy, spell.power)
-						    enemyLife = max(0, enemyLife - dmg)
-						    if (spell.statusInflict != StatusEffect.NONE) {
-							enemy.status = StatusState(
-							    effect = spell.statusInflict)
-							// enemy.status = spell.statusInflict
-							log += " ${enemy.name} is ${spell.statusInflict.name.lowercase()}!"
-						    }
-						}
-
-						SpellType.HEAL -> {
-						    playerLife = minOf(player.stats.life, playerLife + spell.power)
-						    log += " You recovered ${spell.power} HP."
-						}
-
-						SpellType.STATUS -> {
-						    if (spell.statusInflict != StatusEffect.NONE) {
-							enemy.status = StatusState(
-							    effect = spell.statusInflict)
-							// enemy.status = spell.statusInflict
-							Log.d("RuneSwipe", "here")
-							log += " ${enemy.name} is ${spell.statusInflict.name.lowercase()}!"
-						    }
-						}
-
-						SpellType.DEFENSE -> {
-						    log += " The spell has no immediate effect."
-						}
-
-						SpellType.BUFF -> {
-						    log += " The spell has no immediate effect."
-						}
-
-						SpellType.DEBUFF -> {
-						    log += " The spell has no immediate effect."
-						}   
-
-						else -> {
-						    // For now, just log it — covers BUFF, DEBUFF, or unknown future types
-						    log += " The spell has no immediate effect."
-						}
-					    }
-                                        } else {
-                                            log = "Unknown spell."
-                                        }
-                                    } else {
-                                        log = "No rune recognized."
-                                    }
-                                    pendingStrokes.clear()
-                                }
-                            }, gestureTimeout)
+                            if (currentStroke.isNotEmpty()) {
+                                allStrokes += currentStroke.toList()
+                                currentStroke.clear()
+                                lastStrokeTime = System.currentTimeMillis()
+                            }
                         }
                     )
                 }
         ) {
-            // Draw current stroke
             Canvas(Modifier.fillMaxSize()) {
-                if (stroke.size > 1) {
-                    val path = Path().apply {
-                        moveTo(stroke.first().x, stroke.first().y)
-                        stroke.drop(1).forEach { p ->
-                            lineTo(p.x, p.y)
+                // Draw previous strokes
+                allStrokes.forEach { stroke ->
+                    if (stroke.size > 1) {
+                        val path = Path().apply {
+                            moveTo(stroke.first().x, stroke.first().y)
+                            stroke.drop(1).forEach { lineTo(it.x, it.y) }
                         }
+                        drawPath(path, color = Color.Cyan, style = Stroke(width = 8f))
                     }
-                    drawPath(path, color = Color.Cyan, style = Stroke(width = 8f))
+                }
+                // Draw current stroke in progress
+                if (currentStroke.size > 1) {
+                    val path = Path().apply {
+                        moveTo(currentStroke.first().x, currentStroke.first().y)
+                        currentStroke.drop(1).forEach { lineTo(it.x, it.y) }
+                    }
+                    drawPath(path, color = Color.White, style = Stroke(width = 8f))
                 }
             }
         }
 
-        // --- Player HUD (Bottom) ---
-        LifeHud(
-            name = player.name,
-            life = playerLife,
-	    status = player.status,
-            align = Alignment.CenterHorizontally
-        )
+        // ─── Player HUD (bottom) ────────────────────────────
+        LifeHud(player.name, playerLife, player.status, Alignment.CenterHorizontally)
 
-        // --- Log and controls ---
+        // ─── Log and controls ───────────────────────────────
         Spacer(Modifier.height(8.dp))
         Text(log, modifier = Modifier.align(Alignment.CenterHorizontally))
         Row(
@@ -202,10 +191,11 @@ fun BattleScreen(player: Player, enemy: Player) {
             Button(onClick = {
                 playerLife = player.stats.life
                 enemyLife = enemy.stats.life
-		enemy.status = StatusState()
-		player.status = StatusState()
-		// enemy.status = StatusEffect.NONE
-		// player.status = StatusEffect.NONE
+                player.status = StatusState()
+                enemy.status = StatusState()
+                currentStroke.clear()
+                allStrokes.clear()
+                lastStrokeTime = null
                 log = "Battle reset."
             }) { Text("Reset") }
         }
@@ -221,17 +211,11 @@ private fun LifeHud(
 ) {
     Column(horizontalAlignment = align) {
         Text(name, fontWeight = FontWeight.Bold)
-
         LinearProgressIndicator(
             progress = animateFloatAsState(targetValue = life / 30f).value,
-            modifier = Modifier
-                .width(200.dp)
-                .height(10.dp)
+            modifier = Modifier.width(200.dp).height(10.dp)
         )
-
         Text("$life / 30")
-
-        // ── Status line ───────────────────────────
         if (status.effect != StatusEffect.NONE) {
             Text(
                 text = status.effect.displayName,
@@ -239,7 +223,7 @@ private fun LifeHud(
                 color = MaterialTheme.colorScheme.primary
             )
         } else {
-            Spacer(Modifier.height(16.dp)) // blank space for alignment
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
