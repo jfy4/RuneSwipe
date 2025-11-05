@@ -44,92 +44,111 @@ object RuneModel {
     }
 
     // faithful port of Python load_trace()
-    private fun preprocess(strokes: List<List<Point>>): FloatArray {
-        val pts = strokes.flatten()
-        if (pts.isEmpty()) return FloatArray(MAX_POINTS * 4)
+    fun preprocess(strokes: List<List<Point>>): FloatArray {
+	val pts = strokes.flatten()
+	if (pts.isEmpty()) return FloatArray(MAX_POINTS * 4)
 
-        // --- normalize spatial coords by bounding box ---
-        val xs = pts.map { it.x }
-        val ys = pts.map { it.y }
-        val minX = xs.minOrNull() ?: 0f
-        val maxX = xs.maxOrNull() ?: 0f
-        val minY = ys.minOrNull() ?: 0f
-        val maxY = ys.maxOrNull() ?: 0f
-        val w = max(maxX - minX, 1e-6f)
-        val h = max(maxY - minY, 1e-6f)
-        val scale = 1f / max(w, h)
+	// --- normalize spatial coords by bounding box ---
+	val xs = pts.map { it.x }
+	val ys = pts.map { it.y }
+	val minX = xs.minOrNull() ?: 0f
+	val maxX = xs.maxOrNull() ?: 0f
+	val minY = ys.minOrNull() ?: 0f
+	val maxY = ys.maxOrNull() ?: 0f
+	val w = max(maxX - minX, 1e-6f)
+	val h = max(maxY - minY, 1e-6f)
+	val scale = 1f / max(w, h)
 
-        // --- normalize time to [0,1] ---
-        val t0 = pts.first().t
-        val tN = pts.last().t
-        val tSpan = max(tN - t0, 1e-6f)
+	// --- normalize time to [0,1] ---
+	val t0 = pts.first().t
+	val tN = pts.last().t
+	val tSpan = max(tN - t0, 1e-6f)
 
-        val seq = mutableListOf<Float>()
-        var prevX = 0f
-        var prevY = 0f
-        var prevT = 0f
-        var firstPoint = true
+	// --- build Δx, Δy, Δt, pen_lift sequence ---
+	val seq = mutableListOf<Float>()
+	var prevX = 0f
+	var prevY = 0f
+	var prevT = 0f
+	var firstPoint = true
 
-        for (s in strokes) {
-            val stroke = s
+	for (stroke in strokes) {
             if (stroke.isEmpty()) continue
-
             for ((j, p) in stroke.withIndex()) {
-                val x = (p.x - minX) * scale
-                val y = (p.y - minY) * scale
-                val t = (p.t - t0) / tSpan
-
-                if (firstPoint) {
-                    prevX = x
-                    prevY = y
-                    prevT = t
+		val x = (p.x - minX) * scale
+		val y = (p.y - minY) * scale
+		val t = (p.t - t0) / tSpan
+		if (firstPoint) {
+                    prevX = x; prevY = y; prevT = t
                     firstPoint = false
                     continue
-                }
-
-                val dx = x - prevX
-                val dy = y - prevY
-                val dt = t - prevT
-                val penLift = if (j == 0) 1f else 0f
-
-                seq.add(dx)
-                seq.add(dy)
-                seq.add(dt)
-                seq.add(penLift)
-
-                prevX = x
-                prevY = y
-                prevT = t
-            }
-        }
-
-        // // --- pad/trim to MAX_POINTS × 4 ---
-        // val arr = FloatArray(MAX_POINTS * 4)
-        // val copyLen = minOf(seq.size, arr.size)
-        // for (i in 0 until copyLen) arr[i] = seq[i]
-	// --- downsample or pad the sequence to MAX_POINTS × 4 ---
-	val numPoints = seq.size / 4
-	val arr = FloatArray(MAX_POINTS * 4)
-
-	if (numPoints > MAX_POINTS) {
-	    // Downsample
-	    val step: Float = numPoints.toFloat() / MAX_POINTS
-	    val indices = (0 until MAX_POINTS).map { i: Int -> (i * step).roundToInt() }
-
-	    indices.forEachIndexed { i: Int, index: Int ->
-		val baseIndex = index * 4
-		if (baseIndex + 3 < seq.size) { // Ensure we don't go out of bounds
-		    arr[i * 4] = seq[baseIndex]
-		    arr[i * 4 + 1] = seq[baseIndex + 1]
-		    arr[i * 4 + 2] = seq[baseIndex + 2]
-		    arr[i * 4 + 3] = seq[baseIndex + 3]
 		}
-	    }
+		val dx = x - prevX
+		val dy = y - prevY
+		val dt = t - prevT
+		val penLift = if (j == 0) 1f else 0f
+		seq.add(dx)
+		seq.add(dy)
+		seq.add(dt)
+		seq.add(penLift)
+		prevX = x; prevY = y; prevT = t
+            }
+	}
+
+	// ── Denoise / remove nearly-zero motion ──
+	val filtered = mutableListOf<Float>()
+	for (i in 0 until seq.size step 4) {
+            val dx = seq[i]; val dy = seq[i + 1]
+            val mag = kotlin.math.sqrt(dx * dx + dy * dy)
+            if (mag > 1e-5f) {
+		filtered.add(dx)
+		filtered.add(dy)
+		filtered.add(seq[i + 2])
+		filtered.add(seq[i + 3])
+            }
+	}
+
+	// ── Standardize (zero mean, unit var) ──
+	if (filtered.isNotEmpty()) {
+            val n = filtered.size / 4
+            val means = FloatArray(4)
+            val stds = FloatArray(4)
+            // compute means
+            for (i in 0 until n) {
+		for (j in 0 until 4) {
+                    means[j] += filtered[i * 4 + j]
+		}
+            }
+            for (j in 0 until 4) means[j] /= n.toFloat()
+            // compute stds
+            for (i in 0 until n) {
+		for (j in 0 until 4) {
+                    val d = filtered[i * 4 + j] - means[j]
+                    stds[j] += d * d
+		}
+            }
+            for (j in 0 until 4) stds[j] = kotlin.math.sqrt(stds[j] / n.toFloat()).coerceAtLeast(1e-6f)
+            // normalize in place
+            for (i in 0 until n) {
+		for (j in 0 until 4) {
+                    val idx = i * 4 + j
+                    filtered[idx] = (filtered[idx] - means[j]) / stds[j]
+		}
+            }
+	}
+
+	// ── Pad / Trim ──
+	val arr = FloatArray(MAX_POINTS * 4)
+	val numPoints = filtered.size / 4
+	if (numPoints > MAX_POINTS) {
+            val step = (numPoints - 1).toFloat() / (MAX_POINTS - 1)
+            for (i in 0 until MAX_POINTS) {
+		val src = (i * step).roundToInt() * 4
+		for (j in 0 until 4) {
+                    arr[i * 4 + j] = filtered.getOrElse(src + j) { 0f }
+		}
+            }
 	} else {
-	    // Pad
-	    for (i in seq.indices) {
-		arr[i] = seq[i]
-	    }
+            for (i in filtered.indices) arr[i] = filtered[i]
 	}
 	return arr
     }
