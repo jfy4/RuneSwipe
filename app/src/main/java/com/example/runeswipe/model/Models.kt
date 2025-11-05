@@ -7,6 +7,8 @@ package com.example.runeswipe.model
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import kotlin.math.max
+import kotlin.math.min
 
 // ───────────────────────────────────────────────
 // Player stats and status
@@ -98,11 +100,60 @@ data class RuneTemplate(
 /**
  * Game-level spell that references a rune and defines its in-battle effect.
  */
+// data class Spell(
+//     val id: String,
+//     val name: String,
+//     val type: SpellType,
+//     val power: Int,
+//     val statusInflict: StatusEffect = StatusEffect.NONE,
+// )
 data class Spell(
     val id: String,
     val name: String,
     val type: SpellType,
     val power: Int,
     val statusInflict: StatusEffect = StatusEffect.NONE,
-)
+) {
+    fun apply(caster: Player, target: Player): String {
+        var result = "You cast $name!"
 
+        when (type) {
+            SpellType.ATTACK -> {
+                val dmg = computeDamage(caster, target, power)
+                target.stats.life = max(0, target.stats.life - dmg)
+                result += " It dealt $dmg damage."
+                if (statusInflict != StatusEffect.NONE) {
+                    target.status = StatusState(statusInflict)
+                    result += " ${target.name} is ${statusInflict.name.lowercase()}!"
+                }
+            }
+
+            SpellType.HEAL -> {
+                val healed = min(power, caster.stats.maxLife - caster.stats.life)
+                caster.stats.life += healed
+                result += " You recovered $healed HP."
+            }
+
+            SpellType.STATUS -> {
+                if (statusInflict != StatusEffect.NONE) {
+                    target.status = StatusState(statusInflict)
+                    result += " ${target.name} is ${statusInflict.name.lowercase()}!"
+                } else {
+                    result += " But nothing happened."
+                }
+            }
+
+            else -> {
+                result += " The spell has no immediate effect."
+            }
+        }
+
+        return result
+    }
+}
+
+private fun computeDamage(attacker: Player, defender: Player, basePower: Int): Int {
+    val atk = basePower + attacker.stats.strength
+    val def = defender.stats.defense
+    return max(0, atk - def / 2)
+}

@@ -93,30 +93,7 @@ fun BattleScreen(player: Player, enemy: Player) {
                                     } else null
 
                                     if (spell != null) {
-                                        log = "You cast ${spell.name}!"
-                                        when (spell.type) {
-                                            SpellType.ATTACK -> {
-                                                val dmg = computeDamage(player, enemy, spell.power)
-                                                enemy.stats.life = max(0, enemy.stats.life - dmg)
-                                                if (spell.statusInflict != StatusEffect.NONE) {
-                                                    enemy.status = StatusState(spell.statusInflict)
-                                                    log += " ${enemy.name} is ${spell.statusInflict.name.lowercase()}!"
-                                                }
-                                            }
-                                            SpellType.HEAL -> {
-                                                player.stats.life = min(player.stats.maxLife, player.stats.life + spell.power)
-                                                log += " You recovered ${spell.power} HP."
-                                            }
-                                            SpellType.STATUS -> {
-                                                if (spell.statusInflict != StatusEffect.NONE) {
-                                                    enemy.status = StatusState(spell.statusInflict)
-                                                    log += " ${enemy.name} is ${spell.statusInflict.name.lowercase()}!"
-                                                }
-                                            }
-                                            else -> {
-                                                log += " The spell has no immediate effect."
-                                            }
-                                        }
+					log = spell.apply(player, enemy)
                                     } else {
                                         log = "Unknown spell."
                                     }
@@ -225,8 +202,3 @@ private fun LifeHud(
 private fun Offset.toPoint(): Point =
     Point(x = this.x, y = this.y, t = System.currentTimeMillis().toFloat())
 
-private fun computeDamage(attacker: Player, defender: Player, basePower: Int): Int {
-    val atk = basePower + attacker.stats.strength
-    val def = defender.stats.defense
-    return max(0, atk - def / 2)
-}
