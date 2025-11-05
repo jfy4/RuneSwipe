@@ -75,10 +75,12 @@ class RuneDataset(Dataset):
         self.paths, self.labels, self.label2id = [], [], {}
         lbls = sorted(os.listdir(root))
         for i, l in enumerate(lbls):
+            print(f"Label {i}: {l}")
             d = os.path.join(root, l)
             if not os.path.isdir(d): continue
             self.label2id[l] = i
             js = [f for f in os.listdir(d) if f.endswith(".json")]
+            print(f" Found {len(js)} JSONs")
             for f in js:
                 self.paths.append(os.path.join(d, f))
                 self.labels.append(i)
@@ -130,6 +132,7 @@ if __name__ == "__main__":
     ds = RuneDataset(root)
     print("Label2id:", ds.label2id)
     print("Num classes:", len(ds.label2id))
+    exit()
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     val_frac = 0.2
