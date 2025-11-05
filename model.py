@@ -126,8 +126,6 @@ class StrokeTransformer(nn.Module):
 
 # ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print(load_trace("/home/judah/android_apps/RuneSwipe/dataset/Lefu/trace_20251028_114638.json").flatten()[:8])
-    exit()
     root = "dataset"
     ds = RuneDataset(root)
     print("Label2id:", ds.label2id)
