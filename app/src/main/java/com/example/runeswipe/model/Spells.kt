@@ -13,24 +13,22 @@ object SpellsRepo {
         id = "Fehu",
         name = "Fireball",
         type = SpellType.ATTACK,
-        power = 6,
-	statusInflict = StatusEffect.BURNED,
+        damage = 6,
+	status = StatusEffect.BURNED,
     )
 
     val Heal = Spell(
         id = "Lefu",
         name = "Healing Light",
         type = SpellType.HEAL,
-        power = 5,
-	statusInflict = StatusEffect.NONE
+	heal = 5,
     )
 
     val Poison = Spell(
         id = "Venhu",
         name = "Poison",
         type = SpellType.STATUS,
-        power = 0,
-	statusInflict = StatusEffect.POISONED,
+	status = StatusEffect.POISONED,
     )
 
 

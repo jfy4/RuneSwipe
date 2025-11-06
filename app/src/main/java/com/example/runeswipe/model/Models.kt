@@ -13,7 +13,25 @@ import kotlin.math.min
 // ───────────────────────────────────────────────
 // Player stats and status
 // ───────────────────────────────────────────────
-enum class SpellType { ATTACK, DEFENSE, HEAL, STATUS, BUFF, DEBUFF }
+enum class SpellType { ATTACK, GUARD, HEAL, STATUS, BUFF, DEBUFF }
+
+enum class BuffEffect(		//flesh out
+    val displayName: String,
+    val baseDuration: Int,
+    val basePotency: Int,
+    val description: String = ""
+) {
+    NONE("None", 0, 0),
+}
+
+enum class DebuffEffect(		//flesh out
+    val displayName: String,
+    val baseDuration: Int,
+    val basePotency: Int,
+    val description: String = ""
+) {
+    NONE("None", 0, 0),
+}
 
 enum class StatusEffect(
     val displayName: String,
@@ -23,9 +41,9 @@ enum class StatusEffect(
 ) {
     NONE("None", 0, 0),
     POISONED("Poisoned", 5, 3, "Gradually loses HP"),
-    SHIELDED("Shielded", 2, 3),
-    IMMOBILIZED("Immobilized", 3, 4),
-    BURNED("Burned", 4, 5, "Takes fire damage.")
+    // SHIELDED("Shielded", 2, 3),
+    // IMMOBILIZED("Immobilized", 3, 4),
+    BURNED("Burned", 4, 5, "Takes fire damage."),
 }
 
 class Stats(
@@ -47,6 +65,16 @@ class Stats(
 
 data class StatusState(
     val effect: StatusEffect = StatusEffect.NONE,
+    var elapsed: Int = 0
+)
+
+data class BuffState(
+    val effect: BuffEffect = BuffEffect.NONE,
+    var elapsed: Int = 0
+)
+
+data class DebuffState(
+    val effect: DebuffEffect = DebuffEffect.NONE,
     var elapsed: Int = 0
 )
 
@@ -91,53 +119,57 @@ data class Point(
 /**
  * Represents a drawn rune template or a learned rune pattern.
  */
-data class RuneTemplate(
-    val id: String,
-    val name: String,
-    val strokes: List<List<Point>>  // multiple strokes per rune
-)
+// data class RuneTemplate(
+//     val id: String,
+//     val name: String,
+//     val strokes: List<List<Point>>  // multiple strokes per rune
+// )
 
 /**
  * Game-level spell that references a rune and defines its in-battle effect.
+ * @property id   the unique id used for classification
+ * @property name the in-game name of the spell
+ * @property type the type of spell (ATTACK, STATUS, etc.)
+ * @property damage the damage dealt if spell is ATTACK
+ * @property status the status effect if spell is STATUS
+ * @property buff the buff if spell is BUFF
+ * @property debuff the debuff if spelll is DEBUFF
+ * @property heal the amount healed if spell is HEAL
  */
-// data class Spell(
-//     val id: String,
-//     val name: String,
-//     val type: SpellType,
-//     val power: Int,
-//     val statusInflict: StatusEffect = StatusEffect.NONE,
-// )
 data class Spell(
     val id: String,
     val name: String,
     val type: SpellType,
-    val power: Int,
-    val statusInflict: StatusEffect = StatusEffect.NONE,
+    val damage: Int = 0,
+    val status: StatusEffect = StatusEffect.NONE,
+    val buff: BuffEffect = BuffEffect.NONE,
+    val debuff: DebuffEffect = DebuffEffect.NONE,
+    val heal: Int = 0,
 ) {
     fun apply(caster: Player, target: Player): String {
         var result = "You cast $name!"
 
         when (type) {
             SpellType.ATTACK -> {
-                val dmg = computeDamage(caster, target, power)
+                val dmg = computeDamage(caster, target, damage)
                 target.stats.life = max(0, target.stats.life - dmg)
                 result += " It dealt $dmg damage."
-                if (statusInflict != StatusEffect.NONE) {
-                    target.status = StatusState(statusInflict)
-                    result += " ${target.name} is ${statusInflict.name.lowercase()}!"
+                if (status != StatusEffect.NONE) {
+                    target.status = StatusState(status)
+                    result += " ${target.name} is ${status.name.lowercase()}!"
                 }
             }
 
             SpellType.HEAL -> {
-                val healed = min(power, caster.stats.maxLife - caster.stats.life)
+                val healed = min(heal, caster.stats.maxLife - caster.stats.life)
                 caster.stats.life += healed
                 result += " You recovered $healed HP."
             }
 
             SpellType.STATUS -> {
-                if (statusInflict != StatusEffect.NONE) {
-                    target.status = StatusState(statusInflict)
-                    result += " ${target.name} is ${statusInflict.name.lowercase()}!"
+                if (status != StatusEffect.NONE) {
+                    target.status = StatusState(status)
+                    result += " ${target.name} is ${status.name.lowercase()}!"
                 } else {
                     result += " But nothing happened."
                 }
