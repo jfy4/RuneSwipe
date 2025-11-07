@@ -5,6 +5,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose") version "2.0.20"
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.0"
 }
 
 android {
@@ -70,4 +71,8 @@ dependencies {
     // ONNX
     // implementation("com.microsoft.onnxruntime:onnxruntime-mobile:1.18.0")
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
+
+    // for persistant characters
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
+
 }

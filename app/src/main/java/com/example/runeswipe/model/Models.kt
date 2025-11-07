@@ -9,6 +9,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlin.math.max
 import kotlin.math.min
+import kotlinx.serialization.Serializable
+
 
 // ───────────────────────────────────────────────
 // Player stats and status
@@ -46,23 +48,56 @@ enum class StatusEffect(
     BURNED("Burned", 4, 5, "Takes fire damage."),
 }
 
-class Stats(
-    initialLife: Int = 30,
-    initialMaxLife: Int = 30,
-    var strength: Int = 5,
-    var defense: Int = 5,
-    var constitution: Int = 5,
-    var speed: Int = 5,
-    var dexterity: Int = 5,
-) {
-    var maxLife by mutableStateOf(initialMaxLife)
-    var life by mutableStateOf(initialLife)
+// @Serializable
+// class Stats(
+//     initialLife: Int = 30,
+//     initialMaxLife: Int = 30,
+//     var strength: Int = 5,
+//     var defense: Int = 5,
+//     var constitution: Int = 5,
+//     var speed: Int = 5,
+//     var dexterity: Int = 5,
+// ) {
+//     var maxLife by mutableStateOf(initialMaxLife)
+//     var life by mutableStateOf(initialLife)
 
-    // fun changeLife(delta: Int) {
-    //     life = (life + delta).coerceIn(0, maxLife)
-    // }
+//     // fun changeLife(delta: Int) {
+//     //     life = (life + delta).coerceIn(0, maxLife)
+//     // }
+// }
+@Serializable
+data class StatsData(
+    val life: Int = 30,
+    val maxLife: Int = 30,
+    val strength: Int = 5,
+    val defense: Int = 5,
+    val constitution: Int = 5,
+    val speed: Int = 5,
+    val dexterity: Int = 5,
+)
+
+// Non-serializable Compose-friendly wrapper
+class Stats(statsData: StatsData = StatsData()) {
+    var life by mutableStateOf(statsData.life)
+    var maxLife by mutableStateOf(statsData.maxLife)
+    var strength by mutableStateOf(statsData.strength)
+    var defense by mutableStateOf(statsData.defense)
+    var constitution by mutableStateOf(statsData.constitution)
+    var speed by mutableStateOf(statsData.speed)
+    var dexterity by mutableStateOf(statsData.dexterity)
+
+    fun toData(): StatsData = StatsData(
+        life = life,
+        maxLife = maxLife,
+        strength = strength,
+        defense = defense,
+        constitution = constitution,
+        speed = speed,
+        dexterity = dexterity
+    )
 }
 
+@Serializable
 data class StatusState(
     val effect: StatusEffect = StatusEffect.NONE,
     var elapsed: Int = 0
@@ -78,17 +113,37 @@ data class DebuffState(
     var elapsed: Int = 0
 )
 
-data class Player(
+
+// ─────────────────────────────────────────────────────────────
+// Serializable data-only version (for saving/loading)
+// ─────────────────────────────────────────────────────────────
+@Serializable
+data class PlayerData(
     val name: String,
-    val stats: Stats,
+    val stats: StatsData = StatsData(),
+    val xp: Int = 0,
+    val level: Int = 1,
+    val status: StatusState = StatusState(),
+    val knownSpellIds: Set<String> = setOf("Fehu", "Venhu")
+)
+
+
+// ─────────────────────────────────────────────────────────────
+// Runtime Player class (Compose-friendly, mutableStateOf, logic)
+// ─────────────────────────────────────────────────────────────
+class Player(
+    val name: String,
+    val stats: Stats = Stats(),
     var xp: Int = 0,
     var level: Int = 1,
-    // var status: StatusEffect = StatusEffect.NONE,
     var status: StatusState = StatusState(),
     val knownSpellIds: MutableSet<String> = mutableSetOf("Fehu", "Venhu")
 ) {
     var cooldownMs by mutableStateOf(0L)
 
+    // ─────────────────────────────
+    // Spell logic
+    // ─────────────────────────────
     fun knowsSpell(spellId: String): Boolean = knownSpellIds.contains(spellId)
 
     fun learnSpell(spell: Spell) {
@@ -97,8 +152,29 @@ data class Player(
         }
     }
 
+    // ─────────────────────────────
+    // Converters for persistence
+    // ─────────────────────────────
+    fun toData(): PlayerData = PlayerData(
+        name = name,
+        stats = stats.toData(),
+        xp = xp,
+        level = level,
+        status = status,
+        knownSpellIds = knownSpellIds
+    )
+
     companion object {
         fun default(name: String) = Player(name, Stats())
+
+        fun fromData(data: PlayerData): Player = Player(
+            name = data.name,
+            stats = Stats(data.stats),
+            xp = data.xp,
+            level = data.level,
+            status = data.status,
+            knownSpellIds = data.knownSpellIds.toMutableSet()
+        )
     }
 }
 
@@ -136,6 +212,7 @@ data class Point(
  * @property debuff the debuff if spelll is DEBUFF
  * @property heal the amount healed if spell is HEAL
  */
+@Serializable
 data class Spell(
     val id: String,
     val name: String,
