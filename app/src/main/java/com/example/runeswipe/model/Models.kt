@@ -123,7 +123,6 @@ data class PlayerData(
     val stats: StatsData = StatsData(),
     val xp: Int = 0,
     val level: Int = 1,
-    val status: StatusState = StatusState(),
     val knownSpellIds: Set<String> = setOf("Fehu", "Venhu")
 )
 
@@ -160,7 +159,6 @@ class Player(
         stats = stats.toData(),
         xp = xp,
         level = level,
-        status = status,
         knownSpellIds = knownSpellIds
     )
 
@@ -172,7 +170,7 @@ class Player(
             stats = Stats(data.stats),
             xp = data.xp,
             level = data.level,
-            status = data.status,
+            status = StatusState(),
             knownSpellIds = data.knownSpellIds.toMutableSet()
         )
     }

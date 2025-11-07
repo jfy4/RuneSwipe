@@ -3,15 +3,21 @@ package com.example.runeswipe.model
 import android.content.Context
 import kotlinx.serialization.json.Json
 import java.io.File
+import android.util.Log
+
 
 object PlayerRepository {
     private const val FILE_NAME = "player_save.json"
-    private val json = Json { prettyPrint = true }
+    private val json = Json {
+	prettyPrint = true
+	encodeDefaults = true
+    }
 
     fun save(context: Context, player: Player) {
         val data = player.toData()
         val jsonText = json.encodeToString(PlayerData.serializer(), data)
-        File(context.filesDir, FILE_NAME).writeText(jsonText)
+	Log.d("RuneSwipe", "Saving player JSON:\n$jsonText")
+	File(context.filesDir, FILE_NAME).writeText(jsonText)
     }
 
     fun load(context: Context): Player? {
