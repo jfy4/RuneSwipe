@@ -42,10 +42,79 @@ enum class StatusEffect(
     val description: String = ""
 ) {
     NONE("None", 0, 0),
-    POISONED("Poisoned", 5, 3, "Gradually loses HP"),
-    // SHIELDED("Shielded", 2, 3),
-    // IMMOBILIZED("Immobilized", 3, 4),
-    BURNED("Burned", 4, 5, "Takes fire damage."),
+
+    // ─────────── DoT Effects ───────────
+    POISONED("Poisoned", 5, 3, "The target is slowly weakened by venom. Lose HP each turn."),
+    BURNED("Burned", 4, 5, "Engulfed in magical flames; loses HP and defense."),
+    BLEEDING("Bleeding", 4, 4, "Wounds drain vitality; cannot regenerate HP."),
+    CURSED_FLAME("Cursed Flame", 3, 5, "Shadowfire eats at spirit and body."),
+
+    // ─────────── Control Effects ───────────
+    FROZEN("Frozen", 2, 0, "Unable to move until thawed; breaks on hit."),
+    STUNNED("Stunned", 1, 0, "Cannot act for one turn."),
+    PARALYZED("Paralyzed", 3, 0, "50% chance to lose turn each round."),
+    ASLEEP("Asleep", 3, 0, "Skip turns until damaged."),
+    CONFUSED("Confused", 3, 0, "Attacks may target allies or self."),
+    SILENCED("Silenced", 3, 0, "Cannot cast spells."),
+
+    // ─────────── Debuffs ───────────
+    WEAKENED("Weakened", 3, 2, "Reduced Strength."),
+    CRIPPLED("Crippled", 3, 2, "Reduced Speed."),
+    SHATTERED_GUARD("Shattered Guard", 3, 2, "Reduced Defense."),
+    CURSED_MIND("Cursed Mind", 4, 2, "Reduced Accuracy or Magic Power."),
+    DOOMED("Doomed", 4, 0, "Target dies after timer expires."),
+
+    // ─────────── Buffs ───────────
+    ENRAGED("Enraged", 3, 4, "Attack up, Defense down."),
+    FORTIFIED("Fortified", 4, 3, "Defense up."),
+    HASTE("Haste", 3, 3, "Increased Speed, may act twice per round."),
+    BARRIER("Barrier", 3, 6, "Magical shield absorbs harm."),
+    REGENERATING("Regeneration", 4, 3, "Recover HP each turn."),
+    FOCUSED("Focus", 3, 3, "Accuracy and Magic Power up."),
+    REFLECTING("Reflect", 2, 0, "Reflects incoming magic damage."),
+    INVISIBLE("Invisible", 3, 0, "Attacks against you may miss."),
+
+    // ─────────── Exotic ───────────
+    SOULBOUND("Soulbind", 3, 0, "Links caster and target HP."),
+    HEXED("Hexed", 3, 0, "Random debuff each turn."),
+    MANA_LEAK("Mana Leak", 3, 3, "Lose MP each turn."),
+    SHADOW_VEIL("Shadow Veil", 2, 0, "Immune to one attack type."),
+    RADIANT_BLESSING("Radiant Blessing", 3, 0, "Immune to status effects."),
+}
+
+
+enum class BuffEffect(
+    val displayName: String,
+    val baseDuration: Int,
+    val basePotency: Int,
+    val description: String = ""
+) {
+    NONE("None", 0, 0),
+    ENRAGED("Enraged", 3, 4, "Attack up, Defense down."),
+    FORTIFIED("Fortified", 4, 3, "Increased Defense."),
+    HASTE("Haste", 3, 3, "Increased Speed."),
+    BARRIER("Barrier", 3, 6, "Absorbs damage."),
+    REGENERATION("Regeneration", 4, 3, "Heals each turn."),
+    FOCUS("Focus", 3, 3, "Improved accuracy and magic."),
+    REFLECT("Reflect", 2, 0, "Reflects spells."),
+    INVISIBILITY("Invisibility", 3, 0, "Enemies may miss attacks."),
+    RADIANT_BLESSING("Radiant Blessing", 3, 0, "Immune to status effects."),
+}
+
+enum class DebuffEffect(
+    val displayName: String,
+    val baseDuration: Int,
+    val basePotency: Int,
+    val description: String = ""
+) {
+    NONE("None", 0, 0),
+    WEAKENED("Weakened", 3, 2, "Reduced Strength."),
+    CRIPPLED("Crippled", 3, 2, "Reduced Speed."),
+    SHATTERED_GUARD("Shattered Guard", 3, 2, "Reduced Defense."),
+    CURSED_MIND("Cursed Mind", 4, 2, "Reduced Accuracy or Magic Power."),
+    DOOMED("Doomed", 4, 0, "Target dies after timer expires."),
+    HEXED("Hexed", 3, 0, "Random debuff each turn."),
+    MANA_LEAK("Mana Leak", 3, 3, "Lose MP each turn."),
 }
 
 // @Serializable
@@ -69,11 +138,11 @@ enum class StatusEffect(
 data class StatsData(
     val life: Int = 30,
     val maxLife: Int = 30,
-    val strength: Int = 5,
-    val defense: Int = 5,
-    val constitution: Int = 5,
-    val speed: Int = 5,
-    val dexterity: Int = 5,
+    val strength: Int = 5,	// magic strength
+    val defense: Int = 5,	// magic defence
+    val constitution: Int = 5,	// resistance to status effects
+    val speed: Int = 5,		// rate that mana regenerates???
+    val dexterity: Int = 5,	// ability to dodge incoming spell
 )
 
 // Non-serializable Compose-friendly wrapper
@@ -132,14 +201,15 @@ data class PlayerData(
 // ─────────────────────────────────────────────────────────────
 class Player(
     val name: String,
-    val stats: Stats = Stats(),
-    var xp: Int = 0,
-    var level: Int = 1,
-    var status: StatusState = StatusState(),
-    val knownSpellIds: MutableSet<String> = mutableSetOf("Fehu", "Venhu")
 ) {
     var cooldownMs by mutableStateOf(0L)
-
+    var status: StatusState = StatusState()
+    var xp: Int = 0
+    var level: Int = 1
+    val stats: Stats = Stats()
+    val knownSpellIds: MutableSet<String> = mutableSetOf("Fehu", "Venhu")
+    val buffs: MutableList<BuffState> = mutableListOf()
+    val debuffs: MutableList<DebuffState> = mutableListOf()
     // ─────────────────────────────
     // Spell logic
     // ─────────────────────────────
@@ -163,16 +233,33 @@ class Player(
     )
 
     companion object {
-        fun default(name: String) = Player(name, Stats())
+        fun default(name: String) = Player(name)
 
-        fun fromData(data: PlayerData): Player = Player(
-            name = data.name,
-            stats = Stats(data.stats),
-            xp = data.xp,
-            level = data.level,
-            status = StatusState(),
-            knownSpellIds = data.knownSpellIds.toMutableSet()
-        )
+	fun fromData(data: PlayerData): Player {
+            val p = Player(data.name)
+            // populate fields
+            p.stats.life         = data.stats.life
+            p.stats.maxLife      = data.stats.maxLife
+            p.stats.strength     = data.stats.strength
+            p.stats.defense      = data.stats.defense
+            p.stats.constitution = data.stats.constitution
+            p.stats.speed        = data.stats.speed
+            p.stats.dexterity    = data.stats.dexterity
+
+            p.xp = data.xp
+            p.level = data.level
+            p.status = StatusState()
+            p.knownSpellIds.clear()
+            p.knownSpellIds.addAll(data.knownSpellIds)
+            return p // ✅ explicitly return the populated player
+	}        // fun fromData(data: PlayerData): Player = Player(
+        //     name = data.name,
+        //     stats = Stats(data.stats),
+        //     xp = data.xp,
+        //     level = data.level,
+        //     status = StatusState(),
+        //     knownSpellIds = data.knownSpellIds.toMutableSet()
+        // )
     }
 }
 
@@ -222,40 +309,48 @@ data class Spell(
     val heal: Int = 0,
 ) {
     fun apply(caster: Player, target: Player): String {
-        var result = "You cast $name!"
+	var result = "You cast $name!"
 
-        when (type) {
+	when (type) {
             SpellType.ATTACK -> {
-                val dmg = computeDamage(caster, target, damage)
-                target.stats.life = max(0, target.stats.life - dmg)
-                result += " It dealt $dmg damage."
-                if (status != StatusEffect.NONE) {
-                    target.status = StatusState(status)
-                    result += " ${target.name} is ${status.name.lowercase()}!"
-                }
+		val dmg = computeDamage(caster, target, damage)
+		target.stats.life = max(0, target.stats.life - dmg)
+		result += " It dealt $dmg damage."
+		EffectManager.applyStatus(target, status)
+		EffectManager.applyDebuff(target, debuff)
             }
 
             SpellType.HEAL -> {
-                val healed = min(heal, caster.stats.maxLife - caster.stats.life)
-                caster.stats.life += healed
-                result += " You recovered $healed HP."
+		val healed = min(heal, caster.stats.maxLife - caster.stats.life)
+		caster.stats.life += healed
+		result += " You recovered $healed HP."
             }
 
             SpellType.STATUS -> {
-                if (status != StatusEffect.NONE) {
-                    target.status = StatusState(status)
-                    result += " ${target.name} is ${status.name.lowercase()}!"
-                } else {
-                    result += " But nothing happened."
-                }
+		EffectManager.applyStatus(target, status)
+		result += if (status != StatusEffect.NONE)
+                    " ${target.name} is ${status.displayName.lowercase()}!"
+		else " But nothing happened."
             }
 
-            else -> {
-                result += " The spell has no immediate effect."
+            SpellType.BUFF -> {
+		EffectManager.applyBuff(caster, buff)
+		result += if (buff != BuffEffect.NONE)
+                    " ${caster.name} is empowered by ${buff.displayName.lowercase()}!"
+		else " But nothing happened."
             }
-        }
 
-        return result
+            SpellType.DEBUFF -> {
+		EffectManager.applyDebuff(target, debuff)
+		result += if (debuff != DebuffEffect.NONE)
+                    " ${target.name} is afflicted by ${debuff.displayName.lowercase()}!"
+		else " But nothing happened."
+            }
+
+            else -> result += " The spell has no immediate effect."
+	}
+
+	return result
     }
 }
 

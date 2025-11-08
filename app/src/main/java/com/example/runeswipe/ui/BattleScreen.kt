@@ -31,17 +31,20 @@ fun BattleScreen(player: Player, enemy: Player) {
 
     // Periodic status effect ticking
     LaunchedEffect(Unit) {
-        while (true) {
+	while (true) {
             delay(2000L)
-            val enemyLog = applyStatusEffects(enemy)
-            val playerLog = applyStatusEffects(player)
-            if (enemyLog.isNotEmpty()) {
-                log += "\n$enemyLog"
-            }
-            if (playerLog.isNotEmpty()) {
-                log += "\n$playerLog"
-            }
-        }
+            val enemyLogs = EffectManager.tickPlayer(enemy)
+            val playerLogs = EffectManager.tickPlayer(player)
+
+	    enemyLogs.forEach { log += "\n$it" }
+	    playerLogs.forEach { log += "\n$it" }
+            // if (enemyLogs.isNotEmpty()) {
+	    // 	enemyLogs.forEach { log += "\n$it" }
+            // }
+            // if (playerLogs.isNotEmpty()) {
+	    // 	playerLogs.forEach { log += "\n$it" }
+            // }
+	}
     }
 
     // ─── Rune drawing state ─────────────────────────────────────────────
