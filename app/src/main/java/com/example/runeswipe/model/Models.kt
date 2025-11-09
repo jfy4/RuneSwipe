@@ -17,23 +17,6 @@ import kotlinx.serialization.Serializable
 // ───────────────────────────────────────────────
 enum class SpellType { ATTACK, GUARD, HEAL, STATUS, BUFF, DEBUFF }
 
-enum class BuffEffect(		//flesh out
-    val displayName: String,
-    val baseDuration: Int,
-    val basePotency: Int,
-    val description: String = ""
-) {
-    NONE("None", 0, 0),
-}
-
-enum class DebuffEffect(		//flesh out
-    val displayName: String,
-    val baseDuration: Int,
-    val basePotency: Int,
-    val description: String = ""
-) {
-    NONE("None", 0, 0),
-}
 
 enum class StatusEffect(
     val displayName: String,
@@ -117,23 +100,6 @@ enum class DebuffEffect(
     MANA_LEAK("Mana Leak", 3, 3, "Lose MP each turn."),
 }
 
-// @Serializable
-// class Stats(
-//     initialLife: Int = 30,
-//     initialMaxLife: Int = 30,
-//     var strength: Int = 5,
-//     var defense: Int = 5,
-//     var constitution: Int = 5,
-//     var speed: Int = 5,
-//     var dexterity: Int = 5,
-// ) {
-//     var maxLife by mutableStateOf(initialMaxLife)
-//     var life by mutableStateOf(initialLife)
-
-//     // fun changeLife(delta: Int) {
-//     //     life = (life + delta).coerceIn(0, maxLife)
-//     // }
-// }
 @Serializable
 data class StatsData(
     val life: Int = 30,
@@ -199,6 +165,9 @@ data class PlayerData(
 // ─────────────────────────────────────────────────────────────
 // Runtime Player class (Compose-friendly, mutableStateOf, logic)
 // ─────────────────────────────────────────────────────────────
+/**
+ * @property name the player's witch/wizard's name
+ */
 class Player(
     val name: String,
 ) {
@@ -252,14 +221,7 @@ class Player(
             p.knownSpellIds.clear()
             p.knownSpellIds.addAll(data.knownSpellIds)
             return p // ✅ explicitly return the populated player
-	}        // fun fromData(data: PlayerData): Player = Player(
-        //     name = data.name,
-        //     stats = Stats(data.stats),
-        //     xp = data.xp,
-        //     level = data.level,
-        //     status = StatusState(),
-        //     knownSpellIds = data.knownSpellIds.toMutableSet()
-        // )
+	}
     }
 }
 
@@ -277,14 +239,6 @@ data class Point(
     val t: Float   // time in milliseconds or relative time
 )
 
-/**
- * Represents a drawn rune template or a learned rune pattern.
- */
-// data class RuneTemplate(
-//     val id: String,
-//     val name: String,
-//     val strokes: List<List<Point>>  // multiple strokes per rune
-// )
 
 /**
  * Game-level spell that references a rune and defines its in-battle effect.
