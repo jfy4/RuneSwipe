@@ -132,7 +132,7 @@ if __name__ == "__main__":
     ds = RuneDataset(root)
     print("Label2id:", ds.label2id)
     print("Num classes:", len(ds.label2id))
-    exit()
+    # exit()
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     val_frac = 0.2
