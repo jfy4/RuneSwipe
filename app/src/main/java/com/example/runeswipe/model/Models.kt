@@ -176,7 +176,7 @@ class Player(
     var xp: Int = 0
     var level: Int = 1
     val stats: Stats = Stats()
-    val knownSpellIds: MutableSet<String> = mutableSetOf("Fehu", "Venhu")
+    val knownSpellIds: MutableSet<String> = mutableSetOf("Fehu", "Venhu", "Mute")
     val buffs: MutableList<BuffState> = mutableListOf()
     val debuffs: MutableList<DebuffState> = mutableListOf()
     // ─────────────────────────────

@@ -31,6 +31,13 @@ object SpellsRepo {
 	status = StatusEffect.POISONED,
     )
 
+    val Mute = Spell(
+        id = "Mute",
+        name = "Mute",
+        type = SpellType.STATUS,
+	status = StatusEffect.SILENCED,
+    )
 
-    val All = listOf(Fireball, Heal, Poison)
+
+    val All = listOf(Fireball, Heal, Poison, Mute)
 }
