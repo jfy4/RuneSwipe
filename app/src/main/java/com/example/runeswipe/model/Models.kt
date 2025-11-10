@@ -191,6 +191,30 @@ class Player(
     }
 
     // ─────────────────────────────
+    // Experience + Leveling
+    // ─────────────────────────────
+    fun gainXp(amount: Int): String {
+	xp += amount
+	var log = "You gained $amount XP!"
+
+	// Simple level-up rule: every 100 XP = level up
+	while (xp >= xpNeededForNextLevel()) {
+            xp -= xpNeededForNextLevel()
+            level++
+            log += " You leveled up to level $level!"
+            // Optional stat growth:
+            stats.maxLife += 5
+            stats.life = stats.maxLife
+            stats.strength += 1
+            stats.defense += 1
+	}
+	return log
+    }
+
+    private fun xpNeededForNextLevel(): Int = 100 * level
+
+
+    // ─────────────────────────────
     // Converters for persistence
     // ─────────────────────────────
     fun toData(): PlayerData = PlayerData(

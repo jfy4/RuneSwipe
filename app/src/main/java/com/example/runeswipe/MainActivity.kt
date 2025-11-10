@@ -45,13 +45,19 @@ class MainActivity : ComponentActivity() {
                         startDestination = "menu",
                         modifier = Modifier.padding(pad)
                     ) {
-                        composable("menu") { MainMenuScreen(nav) }
+                        // composable("menu") { MainMenuScreen(nav) }
+			composable("menu") {
+			    // Reload the latest saved player when returning to menu
+			    LaunchedEffect(Unit) {
+				PlayerRepository.load(context)?.let { player = it }
+			    }
+			    MainMenuScreen(nav)
+			}
 
-                        composable("battle") {
-                            // New enemy each battle
-                            val enemy = remember { Player.default("Rival") }
-                            BattleScreen(player = player, enemy = enemy)
-                        }
+			composable("battle") {
+			    val enemy = remember { Player.default("Rival") }
+			    BattleScreen(player = player, enemy = enemy, navController = nav)
+			}
 
                         composable("wizard") {
                             WizardScreen()

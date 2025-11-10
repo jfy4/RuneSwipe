@@ -16,51 +16,85 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.runeswipe.model.*
-import com.example.runeswipe.util.applyStatusEffects
-import android.util.Log
 import kotlinx.coroutines.delay
-import kotlin.math.max
-import kotlin.math.min
+import kotlinx.coroutines.launch
+import android.util.Log
 
 @Composable
-fun BattleScreen(player: Player, enemy: Player) {
+fun BattleScreen(
+    player: Player,
+    enemy: Player,
+    navController: NavController
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var log by remember { mutableStateOf("Trace a rune to cast a spell…") }
+    var battleOver by remember { mutableStateOf(false) }
 
-    // Periodic status effect ticking
+    // ─── Rune Drawing State ──────────────────────
+    val currentStroke = remember { mutableStateListOf<Point>() }
+    val allStrokes = remember { mutableStateListOf<List<Point>>() }
+    var lastStrokeTime by remember { mutableStateOf<Long?>(null) }
+    val strokeTimeoutMs = 2000L
+
+    // 1) put endBattle BEFORE the tick loop so we can call it from there
+    fun endBattle(victory: Boolean) {
+        if (battleOver) return
+        battleOver = true
+
+        if (victory) {
+            val xpGain = 50 * enemy.level      // tweak formula as you like
+            val xpLog = player.gainXp(xpGain)
+            log += "\n${enemy.name} was defeated! $xpLog"
+        } else {
+            log += "\nYou were defeated..."
+        }
+
+        // save winner (or current player) to disk
+        PlayerRepository.save(context, player)
+
+        // navigate back after a short pause
+        scope.launch {
+            delay(2000)
+            navController.navigate("menu") {
+                popUpTo("battle") { inclusive = true }
+            }
+        }
+    }
+
+    // 2) status tick that can actually END the battle
     LaunchedEffect(Unit) {
-	while (true) {
+        while (!battleOver) {
             delay(2000L)
             val enemyLogs = EffectManager.tickPlayer(enemy)
             val playerLogs = EffectManager.tickPlayer(player)
 
-	    enemyLogs.forEach { log += "\n$it" }
-	    playerLogs.forEach { log += "\n$it" }
-            // if (enemyLogs.isNotEmpty()) {
-	    // 	enemyLogs.forEach { log += "\n$it" }
-            // }
-            // if (playerLogs.isNotEmpty()) {
-	    // 	playerLogs.forEach { log += "\n$it" }
-            // }
-	}
+            // if poison (or any effect) killed someone, END HERE
+            if (enemy.stats.life <= 0) {
+                endBattle(victory = true)
+                break
+            }
+            if (player.stats.life <= 0) {
+                endBattle(victory = false)
+                break
+            }
+
+            (enemyLogs + playerLogs).forEach { log += "\n$it" }
+        }
     }
 
-    // ─── Rune drawing state ─────────────────────────────────────────────
-    val currentStroke = remember { mutableStateListOf<Point>() }
-    val allStrokes = remember { mutableStateListOf<List<Point>>() }
-
-    var lastStrokeTime by remember { mutableStateOf<Long?>(null) }
-    val strokeTimeoutMs = 2000L // 2 seconds allowed between strokes
-
-    // Coroutine that checks for stroke timeout (fizzle)
-    LaunchedEffect(allStrokes.size, lastStrokeTime) {
+    // 3) stroke-timeout should do nothing once battle is over
+    LaunchedEffect(allStrokes.size, lastStrokeTime, battleOver) {
+        if (battleOver) return@LaunchedEffect
         lastStrokeTime?.let { start ->
             delay(strokeTimeoutMs)
             val elapsed = System.currentTimeMillis() - start
             if (elapsed >= strokeTimeoutMs && allStrokes.isNotEmpty()) {
-                // Fizzle logic
                 allStrokes.clear()
                 currentStroke.clear()
                 lastStrokeTime = null
@@ -70,22 +104,27 @@ fun BattleScreen(player: Player, enemy: Player) {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // ─── Opponent HUD (top) ─────────────────────────────
         LifeHud(enemy, Alignment.CenterHorizontally)
 
-        // ─── Rune Drawing Area ──────────────────────────────
+        // ─── Rune Drawing Area ────────────────────
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
-                // handle double tap submission
-                .pointerInput(Unit) {
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    RoundedCornerShape(16.dp)
+                )
+                // IMPORTANT: make pointerInput depend on battleOver
+                .pointerInput(battleOver) {
                     detectTapGestures(
                         onDoubleTap = {
+                            if (battleOver) return@detectTapGestures
                             if (allStrokes.isNotEmpty()) {
                                 val predicted = RuneModel.predict(allStrokes.toList())
                                 Log.d("RuneSwipe", "Prediction: $predicted")
@@ -96,14 +135,20 @@ fun BattleScreen(player: Player, enemy: Player) {
                                     } else null
 
                                     if (spell != null) {
-					log = spell.apply(player, enemy)
+                                        log = spell.apply(player, enemy)
+
+                                        // immediate death check
+                                        when {
+                                            enemy.stats.life <= 0 -> endBattle(victory = true)
+                                            player.stats.life <= 0 -> endBattle(victory = false)
+                                        }
                                     } else {
                                         log = "Unknown spell."
                                     }
                                 } else {
                                     log = "No rune recognized."
                                 }
-                                // Clear after submission
+
                                 allStrokes.clear()
                                 currentStroke.clear()
                                 lastStrokeTime = null
@@ -111,18 +156,20 @@ fun BattleScreen(player: Player, enemy: Player) {
                         }
                     )
                 }
-                // handle drawing
-                .pointerInput(Unit) {
+                .pointerInput(battleOver) {
                     detectDragGestures(
                         onDragStart = { offset ->
+                            if (battleOver) return@detectDragGestures
                             currentStroke.clear()
                             currentStroke += offset.toPoint()
                         },
                         onDrag = { change, _ ->
+                            if (battleOver) return@detectDragGestures
                             currentStroke += change.position.toPoint()
                             change.consume()
                         },
                         onDragEnd = {
+                            if (battleOver) return@detectDragGestures
                             if (currentStroke.isNotEmpty()) {
                                 allStrokes += currentStroke.toList()
                                 currentStroke.clear()
@@ -143,7 +190,7 @@ fun BattleScreen(player: Player, enemy: Player) {
                         drawPath(path, color = Color.Cyan, style = Stroke(width = 8f))
                     }
                 }
-                // Draw current stroke in progress
+                // Draw current stroke
                 if (currentStroke.size > 1) {
                     val path = Path().apply {
                         moveTo(currentStroke.first().x, currentStroke.first().y)
@@ -154,40 +201,42 @@ fun BattleScreen(player: Player, enemy: Player) {
             }
         }
 
-        // ─── Player HUD (bottom) ────────────────────────────
         LifeHud(player, Alignment.CenterHorizontally)
 
-        // ─── Log and controls ───────────────────────────────
         Spacer(Modifier.height(8.dp))
         Text(log, modifier = Modifier.align(Alignment.CenterHorizontally))
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            Button(onClick = {
-                       player.stats.life = player.stats.maxLife
-                       enemy.stats.life = enemy.stats.maxLife
-                       player.status = StatusState()
-                       enemy.status = StatusState()
-                       currentStroke.clear()
-                       allStrokes.clear()
-                       lastStrokeTime = null
-                       log = "Battle reset."
-		   }) { Text("Reset") }
+            Button(
+                onClick = {
+                    if (battleOver) return@Button  // don't reset dead battle
+                    player.stats.life = player.stats.maxLife
+                    enemy.stats.life = enemy.stats.maxLife
+                    player.status = StatusState()
+                    enemy.status = StatusState()
+                    currentStroke.clear()
+                    allStrokes.clear()
+                    lastStrokeTime = null
+                    log = "Battle reset."
+                }
+            ) { Text("Reset") }
         }
     }
 }
 
 @Composable
-private fun LifeHud(
-    player: Player,
-    align: Alignment.Horizontal
-) {
+private fun LifeHud(player: Player, align: Alignment.Horizontal) {
     Column(horizontalAlignment = align) {
         Text(player.name, fontWeight = FontWeight.Bold)
         LinearProgressIndicator(
-            progress = animateFloatAsState(targetValue = player.stats.life / player.stats.maxLife.toFloat()).value,
-            modifier = Modifier.width(200.dp).height(10.dp)
+            progress = animateFloatAsState(
+                targetValue = player.stats.life / player.stats.maxLife.toFloat()
+            ).value,
+            modifier = Modifier
+                .width(200.dp)
+                .height(10.dp)
         )
         Text("${player.stats.life} / ${player.stats.maxLife}")
         if (player.status.effect != StatusEffect.NONE) {
@@ -204,4 +253,3 @@ private fun LifeHud(
 
 private fun Offset.toPoint(): Point =
     Point(x = this.x, y = this.y, t = System.currentTimeMillis().toFloat())
-
