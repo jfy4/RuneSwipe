@@ -214,8 +214,10 @@ fun BattleScreen(
                     if (battleOver) return@Button  // don't reset dead battle
                     player.stats.life = player.stats.maxLife
                     enemy.stats.life = enemy.stats.maxLife
-                    player.status = StatusState()
-                    enemy.status = StatusState()
+		    player.statuses.clear()
+		    enemy.statuses.clear()
+                    // player.status = StatusState()
+                    // enemy.status = StatusState()
                     currentStroke.clear()
                     allStrokes.clear()
                     lastStrokeTime = null
@@ -239,15 +241,32 @@ private fun LifeHud(player: Player, align: Alignment.Horizontal) {
                 .height(10.dp)
         )
         Text("${player.stats.life} / ${player.stats.maxLife}")
-        if (player.status.effect != StatusEffect.NONE) {
-            Text(
-                text = player.status.effect.displayName,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-        } else {
-            Spacer(Modifier.height(16.dp))
-        }
+	if (player.statuses.isNotEmpty()) {
+	    Column {
+		player.statuses.forEach { s ->
+		    val label = if (s.stacks > 1)
+			"${s.effect.displayName} ×${s.stacks}"
+		    else
+			s.effect.displayName
+		    Text(
+			text = label,
+			style = MaterialTheme.typography.bodySmall,
+			color = MaterialTheme.colorScheme.primary
+		    )
+		}
+	    }
+	} else {
+	    Spacer(Modifier.height(16.dp))
+	}
+        // if (player.status.effect != StatusEffect.NONE) {
+        //     Text(
+        //         text = player.status.effect.displayName,
+        //         style = MaterialTheme.typography.bodySmall,
+        //         color = MaterialTheme.colorScheme.primary
+        //     )
+        // } else {
+        //     Spacer(Modifier.height(16.dp))
+        // }
     }
 }
 

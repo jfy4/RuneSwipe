@@ -135,8 +135,16 @@ class Stats(statsData: StatsData = StatsData()) {
 @Serializable
 data class StatusState(
     val effect: StatusEffect = StatusEffect.NONE,
-    var elapsed: Int = 0
+    var elapsed: Int = 0,
+    var stacks: Int = 1,            // NEW: stack count
+    var potencyBonus: Int = 0       // optional: added power per stack
 )
+
+// @Serializable
+// data class StatusState(
+//     val effect: StatusEffect = StatusEffect.NONE,
+//     var elapsed: Int = 0
+// )
 
 data class BuffState(
     val effect: BuffEffect = BuffEffect.NONE,
@@ -172,7 +180,8 @@ class Player(
     val name: String,
 ) {
     var cooldownMs by mutableStateOf(0L)
-    var status: StatusState = StatusState()
+    val statuses: MutableList<StatusState> = mutableListOf()
+    // var status: StatusState = StatusState()
     var xp: Int = 0
     var level: Int = 1
     val stats: Stats = Stats()
@@ -241,7 +250,7 @@ class Player(
 
             p.xp = data.xp
             p.level = data.level
-            p.status = StatusState()
+            // p.status = StatusState()
             p.knownSpellIds.clear()
             p.knownSpellIds.addAll(data.knownSpellIds)
             return p // ✅ explicitly return the populated player

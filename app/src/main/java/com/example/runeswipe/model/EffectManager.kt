@@ -16,8 +16,10 @@ object EffectManager {
         val logs = mutableListOf<String>()
 
         // STATUS
-        val statusLog = tickStatus(player)
-        if (statusLog.isNotEmpty()) logs += statusLog
+        // val statusLog = tickStatus(player)
+        // if (statusLog.isNotEmpty()) logs += statusLog
+	val statusLogs = tickStatuses(player)
+	if (statusLogs.isNotEmpty()) logs += statusLogs
 
         // BUFFS
         val buffLogs = tickBuffs(player)
@@ -33,20 +35,48 @@ object EffectManager {
     // ─────────────────────────────────────────────
     // STATUS EFFECTS
     // ─────────────────────────────────────────────
-    private fun tickStatus(player: Player): String {
-        val state = player.status
-        if (state.effect == StatusEffect.NONE) return ""
+    private fun tickStatuses(player: Player): List<String> {
+	val logs = mutableListOf<String>()
+	val iterator = player.statuses.iterator()
 
-        val effect = state.effect
-        val behavior = StatusLibrary.behaviors[effect]
-        val log = behavior?.invoke(player, state.elapsed) ?: ""
+	while (iterator.hasNext()) {
+            val state = iterator.next()
+            if (state.effect == StatusEffect.NONE) {
+		iterator.remove()
+		continue
+            }
 
-        state.elapsed += 1
-        if (state.elapsed >= effect.baseDuration) {
-            player.status = StatusState() // clear status
-        }
-        return log
+            val behavior = StatusLibrary.behaviors[state.effect]
+            val effectiveTick = state.elapsed
+            val stackedPotency = state.effect.basePotency + (state.potencyBonus * (state.stacks - 1))
+            val log = behavior?.invoke(player, effectiveTick)?.replace(
+		state.effect.basePotency.toString(),
+		stackedPotency.toString()
+            )
+
+            if (!log.isNullOrEmpty()) logs += log
+
+            state.elapsed += 1
+            if (state.elapsed >= state.effect.baseDuration) {
+		iterator.remove()
+            }
+	}
+	return logs
     }
+    // private fun tickStatus(player: Player): String {
+    //     val state = player.status
+    //     if (state.effect == StatusEffect.NONE) return ""
+
+    //     val effect = state.effect
+    //     val behavior = StatusLibrary.behaviors[effect]
+    //     val log = behavior?.invoke(player, state.elapsed) ?: ""
+
+    //     state.elapsed += 1
+    //     if (state.elapsed >= effect.baseDuration) {
+    //         player.status = StatusState() // clear status
+    //     }
+    //     return log
+    // }
 
     // ─────────────────────────────────────────────
     // BUFFS
@@ -128,10 +158,24 @@ object EffectManager {
     // ─────────────────────────────────────────────
     // APPLY HELPERS (for spells)
     // ─────────────────────────────────────────────
+    // fun applyStatus(target: Player, effect: StatusEffect) {
+    //     if (effect != StatusEffect.NONE) {
+    //         target.status = StatusState(effect, 0)
+    //     }
+    // }
     fun applyStatus(target: Player, effect: StatusEffect) {
-        if (effect != StatusEffect.NONE) {
-            target.status = StatusState(effect, 0)
-        }
+	if (effect == StatusEffect.NONE) return
+
+	// Try to find an existing matching effect
+	val existing = target.statuses.find { it.effect == effect }
+	if (existing != null) {
+            // Stack it: increment stacks and extend duration or potency
+            existing.stacks++
+            existing.potencyBonus += 1
+            existing.elapsed = 0 // optional: reset duration on refresh
+	} else {
+            target.statuses += StatusState(effect = effect, elapsed = 0, stacks = 1)
+	}
     }
 
     fun applyBuff(target: Player, effect: BuffEffect) {
