@@ -135,7 +135,7 @@ if __name__ == "__main__":
     # exit()
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    val_frac = 0.2
+    val_frac = 0.1
     n_val = int(len(ds) * val_frac)
     n_train = len(ds) - n_val
     train_ds, val_ds = random_split(ds, [n_train, n_val],
@@ -187,13 +187,18 @@ if __name__ == "__main__":
         model.eval()
         vcorrect = vtotal = vloss_sum = 0
         with torch.no_grad():
-            for x, y, _ in val_loader:
+            for x, y, fnames in val_loader:
                 x, y = x.to(device), y.to(device)
                 logits = model(x)
                 vloss = lossf(logits, y)
                 vloss_sum += vloss.item() * y.size(0)
                 vcorrect += (logits.argmax(1) == y).sum().item()
                 vtotal += y.size(0)
+                # # ✅ Print true label, predicted label, and filename
+                # for name, t, p in zip(fnames, y.tolist(), logits.argmax(1).tolist()):
+                #     true_label = list(ds.label2id.keys())[t]
+                #     pred_label = list(ds.label2id.keys())[p]
+                #     print(f"{name:20s}  true={true_label:10s}  pred={pred_label:10s}")
         val_acc = vcorrect / vtotal
         val_loss = vloss_sum / vtotal
         print(f"ep {epoch+1:02d}  train_acc={train_acc:.3f}  val_acc={val_acc:.3f}  val_loss={val_loss:.3f}")

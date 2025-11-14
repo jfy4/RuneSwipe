@@ -10,6 +10,8 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 import org.json.JSONArray
 import java.io.InputStream
+import android.util.Log
+
 
 object RuneModel {
     private var env: OrtEnvironment? = null
@@ -28,6 +30,7 @@ object RuneModel {
         val labelsJsonString = labelsInputStream.bufferedReader().use { it.readText() }
         val jsonArray = JSONArray(labelsJsonString)
         labels = List(jsonArray.length()) { jsonArray.getString(it) }
+	Log.d("RuneSwipe", "Loaded labels: $labels")
         // labels = listOf("Fehu", "Lefu") // update for your dataset
     }
 
