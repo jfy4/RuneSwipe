@@ -1,43 +1,22 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // app/src/main/java/com/example/runeswipe/model/Spells.kt
-// ─────────────────────────────────────────────────────────────────────────────
 package com.example.runeswipe.model
 
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.PI
-
-
 object SpellsRepo {
-    val Fireball = Spell(
-        id = "Fehu",
-        name = "Fireball",
-        type = SpellType.ATTACK,
-        damage = 6,
-	status = StatusEffect.BURNED,
+    // ─── Spells by Chapter ─────────────────────────────────────────────────────
+    val Apprentice = listOf(
+        Spell("Fehu", "Fireball", SpellType.ATTACK, damage = 6, status = StatusEffect.BURNED),
+        Spell("Lefu", "Healing Light", SpellType.HEAL, heal = 5)
     )
 
-    val Heal = Spell(
-        id = "Lefu",
-        name = "Healing Light",
-        type = SpellType.HEAL,
-	heal = 5,
+    val Adept = listOf(
+        Spell("Venhu", "Poison", SpellType.STATUS, status = StatusEffect.POISONED),
+        Spell("Mute", "Mute", SpellType.STATUS, status = StatusEffect.SILENCED)
     )
 
-    val Poison = Spell(
-        id = "Venhu",
-        name = "Poison",
-        type = SpellType.STATUS,
-	status = StatusEffect.POISONED,
+    val AllChapters: Map<String, List<Spell>> = mapOf(
+        "Apprentice Spells" to Apprentice,
+        "Adept Spells" to Adept,
     )
 
-    val Mute = Spell(
-        id = "Mute",
-        name = "Mute",
-        type = SpellType.STATUS,
-	status = StatusEffect.SILENCED,
-    )
-
-
-    val All = listOf(Fireball, Heal, Poison, Mute)
+    val All = Apprentice + Adept
 }
