@@ -271,4 +271,4 @@ private fun LifeHud(player: Player, align: Alignment.Horizontal) {
 }
 
 private fun Offset.toPoint(): Point =
-    Point(x = this.x, y = this.y, t = System.currentTimeMillis().toFloat())
+    Point(x = this.x, y = this.y, t = System.currentTimeMillis().toDouble())

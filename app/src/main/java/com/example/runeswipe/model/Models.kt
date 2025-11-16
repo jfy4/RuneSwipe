@@ -269,7 +269,7 @@ class Player(
 data class Point(
     val x: Float,
     val y: Float,
-    val t: Float   // time in milliseconds or relative time
+    val t: Double   // time in milliseconds or relative time
 )
 
 

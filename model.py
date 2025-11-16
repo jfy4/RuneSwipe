@@ -1,13 +1,14 @@
 import os, json, torch, torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, random_split
 import numpy as np
-from torch.optim.lr_scheduler import LambdaLR, CosineAnnealingLR
+from torch.optim.lr_scheduler import LambdaLR
 
 # ───────────────────────────────────────────────────────────────
 MAX_POINTS = 100
 # ───────────────────────────────────────────────────────────────
 
-def load_trace(path, MAX_POINTS=MAX_POINTS):
+
+def load_trace(path, MAX_POINTS=100):
     data = json.load(open(path))
     strokes = data["strokes"]
 
@@ -22,33 +23,41 @@ def load_trace(path, MAX_POINTS=MAX_POINTS):
     miny, maxy = min(ys), max(ys)
     w, h = max(maxx - minx, 1e-6), max(maxy - miny, 1e-6)
     scale = 1.0 / max(w, h)
-
     def norm_xy(p): return ((p["x"] - minx) * scale, (p["y"] - miny) * scale)
 
     # normalize time to [0,1]
     ts = [p["t"] for p in all_pts]
     t0, tN = ts[0], ts[-1]
     tspan = max(tN - t0, 1e-6)
+    # print([(p["t"] - t0)/tspan for p in strokes[0][:5]])
 
-    # build Δx, Δy, Δt, pen_lift sequence
-    seq = []
-    prev_x = prev_y = prev_t = None
-    first = True
+    # --- flatten all strokes into (x, y, t, pen) points ---
+    pts = []
     for s in strokes:
         if not s: continue
         for j, p in enumerate(s):
             x, y = norm_xy(p)
             t = (p["t"] - t0) / tspan
-            if first:
-                prev_x, prev_y, prev_t = x, y, t
-                first = False
-                continue
-            dx, dy, dt = x - prev_x, y - prev_y, t - prev_t
             pen = 1.0 if j == 0 else 0.0
-            seq.append([dx, dy, dt, pen])
-            prev_x, prev_y, prev_t = x, y, t
+            pts.append([x, y, t, pen])
+    pts = np.asarray(pts, np.float32)
 
-    seq = np.asarray(seq, np.float32)
+    # --- Downsample original points to MAX_POINTS + 1 uniformly in index ---
+    n_pts = len(pts)
+    if n_pts > MAX_POINTS + 1:
+        idx = np.round(np.linspace(0, n_pts - 1, MAX_POINTS + 1)).astype(int)
+        pts = pts[idx]
+    elif n_pts < MAX_POINTS + 1:
+        # pad by repeating the last point
+        pad = np.repeat(pts[-1][None, :], MAX_POINTS + 1 - n_pts, axis=0)
+        pts = np.concatenate([pts, pad], axis=0)
+
+    # --- Compute deltas between consecutive points ---
+    dx = np.diff(pts[:, 0])
+    dy = np.diff(pts[:, 1])
+    dt = np.diff(pts[:, 2])
+    pen = pts[1:, 3]  # pen value at current point (same logic as before)
+    seq = np.stack([dx, dy, dt, pen], axis=1).astype(np.float32)
 
     # ── Denoise / remove nearly-zero motion ─────────────────────
     if len(seq) > 0:
@@ -57,15 +66,16 @@ def load_trace(path, MAX_POINTS=MAX_POINTS):
 
     # ── Standardize (zero mean, unit var) ───────────────────────
     if len(seq) > 0:
-        mean, std = seq.mean(0, keepdims=True), seq.std(0, keepdims=True) + 1e-6
+        mean = seq.mean(0, keepdims=True)
+        std = seq.std(0, keepdims=True) + 1e-6
         seq = (seq - mean) / std
 
-    # pad/trim
-    if len(seq) > MAX_POINTS:
-        idx = np.round(np.linspace(0, len(seq) - 1, MAX_POINTS)).astype(int)
-        seq = seq[idx]
-    else:
+    # --- Pad if denoising shortened it ---
+    if len(seq) < MAX_POINTS:
         seq = np.vstack([seq, np.zeros((MAX_POINTS - len(seq), 4), np.float32)])
+    elif len(seq) > MAX_POINTS:
+        seq = seq[:MAX_POINTS]
+
     return seq
 
 
@@ -128,6 +138,8 @@ class StrokeTransformer(nn.Module):
 
 # ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    # print(load_trace("./app/src/main/assets/sample_trace.json").flatten()[:8])
+    # exit()
     root = "dataset"
     ds = RuneDataset(root)
     print("Label2id:", ds.label2id)
@@ -194,7 +206,7 @@ if __name__ == "__main__":
                 vloss_sum += vloss.item() * y.size(0)
                 vcorrect += (logits.argmax(1) == y).sum().item()
                 vtotal += y.size(0)
-                # # ✅ Print true label, predicted label, and filename
+                # ✅ Print true label, predicted label, and filename
                 # for name, t, p in zip(fnames, y.tolist(), logits.argmax(1).tolist()):
                 #     true_label = list(ds.label2id.keys())[t]
                 #     pred_label = list(ds.label2id.keys())[p]
