@@ -27,17 +27,34 @@ class MainActivity : ComponentActivity() {
 
                 // 🔹 Try to load the saved player; if none, create a new one
                 val context = this
-                var player by remember {
-                    mutableStateOf(
-                        PlayerRepository.load(context)
-                            ?: Player.default("You").also { PlayerRepository.save(context, it) }
-                    )
-                }
+		var player by remember { mutableStateOf<Player?>(null) }
+		var hasLoaded by remember { mutableStateOf(false) }
+
+		LaunchedEffect(Unit) {
+		    val saved = PlayerRepository.load(context)
+		    if (saved != null) {
+			player = saved
+			hasLoaded = true
+		    } else {
+			// No saved player → go to creation screen
+			hasLoaded = true
+			nav.navigate("createCharacter")
+		    }
+		}
+                // var player by remember {
+                //     mutableStateOf(
+                //         PlayerRepository.load(context)
+                //             ?: Player.default("You").also { PlayerRepository.save(context, it) }
+                //     )
+                // }
 
                 // 🔹 Automatically save whenever player data changes
-                LaunchedEffect(player) {
-                    PlayerRepository.save(context, player)
-                }
+		LaunchedEffect(player) {
+		    player?.let { PlayerRepository.save(context, it) }
+		}
+                // LaunchedEffect(player) {
+                //     PlayerRepository.save(context, player)
+                // }
 
                 Scaffold { pad ->
                     NavHost(
@@ -53,11 +70,33 @@ class MainActivity : ComponentActivity() {
 			    }
 			    MainMenuScreen(nav)
 			}
+			
+			composable("createCharacter") {
+			    CharacterCreationScreen(
+				onDone = { createdPlayer ->
+				    player = createdPlayer
+				    PlayerRepository.save(context, createdPlayer)
+				    nav.navigate("menu") {
+					popUpTo("createCharacter") { inclusive = true }
+				    }
+				}
+			    )
+			}
 
 			composable("battle") {
+			    val p = player ?: return@composable  // do nothing until loaded
 			    val enemy = remember { Player.default("Rival") }
-			    BattleScreen(player = player, enemy = enemy, navController = nav)
+
+			    BattleScreen(
+				player = p,
+				enemy = enemy,
+				navController = nav
+			    )
 			}
+			// composable("battle") {
+			//     val enemy = remember { Player.default("Rival") }
+			//     BattleScreen(player = player, enemy = enemy, navController = nav)
+			// }
 			
 			composable("alley") {
 			    AlleyScreen()
@@ -67,18 +106,26 @@ class MainActivity : ComponentActivity() {
                             WizardScreen()
                         }
 
-                        composable("tome") {
-                            TomeScreen(player)
-                        }
+			composable("tome") {
+			    val p = player ?: return@composable
+			    TomeScreen(p)
+			}
+                        // composable("tome") {
+                        //     TomeScreen(player)
+                        // }
                     }
                 }
             }
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        // 🔹 Save player progress when app goes to background
-        PlayerRepository.save(this, PlayerRepository.load(this) ?: Player.default("You"))
-    }
+    // override fun onPause() {
+    // 	super.onPause()
+    // 	player?.let { PlayerRepository.save(this, it) }
+    // }
+    // override fun onPause() {
+    //     super.onPause()
+    //     // 🔹 Save player progress when app goes to background
+    //     PlayerRepository.save(this, PlayerRepository.load(this) ?: Player.default("You"))
+    // }
 }

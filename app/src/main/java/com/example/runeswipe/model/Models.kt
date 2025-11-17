@@ -1,4 +1,3 @@
-
 // ─────────────────────────────────────────────────────────────────────────────
 // app/src/main/java/com/example/runeswipe/model/Models.kt
 // ─────────────────────────────────────────────────────────────────────────────
@@ -140,11 +139,6 @@ data class StatusState(
     var potencyBonus: Int = 0       // optional: added power per stack
 )
 
-// @Serializable
-// data class StatusState(
-//     val effect: StatusEffect = StatusEffect.NONE,
-//     var elapsed: Int = 0
-// )
 
 data class BuffState(
     val effect: BuffEffect = BuffEffect.NONE,
@@ -163,6 +157,10 @@ data class DebuffState(
 @Serializable
 data class PlayerData(
     val name: String,
+    val gender: String = "male",  // or "female"
+    val eyeColor: String = "brown",
+    val hairColor: String = "brown",
+
     val stats: StatsData = StatsData(),
     val xp: Int = 0,
     val level: Int = 1,
@@ -178,6 +176,9 @@ data class PlayerData(
  */
 class Player(
     val name: String,
+    var gender: String = "male",
+    var eyeColor: String = "brown",
+    var hairColor: String = "brown",
 ) {
     var cooldownMs by mutableStateOf(0L)
     val statuses: MutableList<StatusState> = mutableListOf()
@@ -228,6 +229,9 @@ class Player(
     // ─────────────────────────────
     fun toData(): PlayerData = PlayerData(
         name = name,
+        gender = gender,
+        eyeColor = eyeColor,
+        hairColor = hairColor,
         stats = stats.toData(),
         xp = xp,
         level = level,
@@ -238,7 +242,12 @@ class Player(
         fun default(name: String) = Player(name)
 
 	fun fromData(data: PlayerData): Player {
-            val p = Player(data.name)
+            val p = Player(
+                name = data.name,
+                gender = data.gender,
+                eyeColor = data.eyeColor,
+                hairColor = data.hairColor
+            )
             // populate fields
             p.stats.life         = data.stats.life
             p.stats.maxLife      = data.stats.maxLife
