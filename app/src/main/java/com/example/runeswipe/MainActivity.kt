@@ -58,6 +58,10 @@ class MainActivity : ComponentActivity() {
 			    val enemy = remember { Player.default("Rival") }
 			    BattleScreen(player = player, enemy = enemy, navController = nav)
 			}
+			
+			composable("alley") {
+			    AlleyScreen()
+			}
 
                         composable("wizard") {
                             WizardScreen()

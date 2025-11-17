@@ -29,6 +29,9 @@ fun MainMenuScreen(nav: NavController) {
             Button(onClick = { nav.navigate("battle") }, Modifier.width(160.dp)) {
                 Text("Battle")
             }
+            Button(onClick = { nav.navigate("alley") }, Modifier.width(160.dp)) {
+                Text("Alley")
+            }
             Button(onClick = { nav.navigate("wizard") }, Modifier.width(160.dp)) {
                 Text("Wizard")
             }
