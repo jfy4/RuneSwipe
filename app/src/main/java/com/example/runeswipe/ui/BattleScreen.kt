@@ -50,9 +50,9 @@ fun BattleScreen(
         if (victory) {
             val xpGain = 50 * enemy.level      // tweak formula as you like
             val xpLog = player.gainXp(xpGain)
-            log += "\n${enemy.name} was defeated! $xpLog"
+            log = "\n${enemy.name} was defeated! $xpLog"
         } else {
-            log += "\nYou were defeated..."
+            log = "\nYou were defeated..."
         }
 
         // save winner (or current player) to disk
@@ -84,7 +84,13 @@ fun BattleScreen(
                 break
             }
 
-            (enemyLogs + playerLogs).forEach { log += "\n$it" }
+            // (enemyLogs + playerLogs).forEach { log += "\n$it" }
+	    if (enemyLogs.isNotEmpty()) {
+		log = enemyLogs.last()     // show ONLY the most recent event
+	    }
+	    if (playerLogs.isNotEmpty()) {
+		log = playerLogs.last()
+	    }
         }
     }
 
