@@ -102,9 +102,13 @@ class MainActivity : ComponentActivity() {
 			    AlleyScreen()
 			}
 
-                        composable("wizard") {
-                            WizardScreen()
-                        }
+			composable("wizard") {
+			    val p = player ?: return@composable
+			    WizardScreen(p)
+			}
+                        // composable("wizard") {
+                        //     WizardScreen()
+                        // }
 
 			composable("tome") {
 			    val p = player ?: return@composable

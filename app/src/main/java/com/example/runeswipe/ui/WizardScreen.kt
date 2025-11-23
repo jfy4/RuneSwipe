@@ -7,9 +7,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.runeswipe.model.Player
 
 @Composable
-fun WizardScreen() {
+fun WizardScreen(player: Player) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Your Wizard") }) }
     ) { pad ->
@@ -20,15 +21,30 @@ fun WizardScreen() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Name: You", style = MaterialTheme.typography.titleLarge)
-            Text("Level: 1")
-            Text("Life: 30")
-            Text("Strength: 5")
-            Text("Defense: 5")
-            Text("Constitution: 5")
-            Text("Speed: 5")
-            Text("Dexterity: 5")
+
+            // ————— BASIC INFO —————
+            Text("Name: ${player.name}", style = MaterialTheme.typography.titleLarge)
+            Text("Gender: ${player.gender}")
+            Text("Eye Color: ${player.eyeColor}")
+            Text("Hair Color: ${player.hairColor}")
+
+            Spacer(Modifier.height(12.dp))
+
+            // ————— STATS —————
+            Text("Level: ${player.level}")
+            Text("XP: ${player.xp} / ${player.level * 100}")
+            Spacer(Modifier.height(8.dp))
+
+            Text("Life: ${player.stats.life}")
+            Text("Strength: ${player.stats.strength}")
+            Text("Defense: ${player.stats.defense}")
+            Text("Constitution: ${player.stats.constitution}")
+            Text("Speed: ${player.stats.speed}")
+            Text("Dexterity: ${player.stats.dexterity}")
+
             Spacer(Modifier.height(16.dp))
+
+            // TEMP placeholder for future inventory
             Text("Items:", style = MaterialTheme.typography.titleMedium)
             Text("- Apprentice Robes")
             Text("- Wooden Wand")
