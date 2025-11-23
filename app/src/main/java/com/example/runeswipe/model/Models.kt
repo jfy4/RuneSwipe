@@ -150,6 +150,30 @@ data class DebuffState(
     var elapsed: Int = 0
 )
 
+// ───────────────────────────────────────────────
+// Inventory models
+// ───────────────────────────────────────────────
+@Serializable
+data class Item(
+    val id: String,
+    val name: String,
+    val description: String = "",
+    val quantity: Int = 1
+)
+
+@Serializable
+data class Gear(
+    val id: String,
+    val name: String,
+    val slot: GearSlot,
+    val description: String = ""
+)
+
+@Serializable
+enum class GearSlot {
+    HEAD, BODY, LEGS, FEET, HAND, ACCESSORY
+}
+
 
 // ─────────────────────────────────────────────────────────────
 // Serializable data-only version (for saving/loading)
@@ -157,14 +181,17 @@ data class DebuffState(
 @Serializable
 data class PlayerData(
     val name: String,
-    val gender: String = "male",  // or "female"
+    val gender: String = "male",
     val eyeColor: String = "brown",
     val hairColor: String = "brown",
 
     val stats: StatsData = StatsData(),
     val xp: Int = 0,
     val level: Int = 1,
-    val knownSpellIds: Set<String> = setOf("Fehu", "Venhu")
+    val knownSpellIds: Set<String> = setOf("Fehu", "Venhu"),
+
+    val items: List<Item> = emptyList(),
+    val gear: List<Gear> = emptyList()
 )
 
 
@@ -187,6 +214,8 @@ class Player(
     var level: Int = 1
     val stats: Stats = Stats()
     val knownSpellIds: MutableSet<String> = mutableSetOf("Fehu", "Venhu", "Mute")
+    val items = mutableStateListOf<Item>()
+    val gear = mutableStateListOf<Gear>()
     val buffs: MutableList<BuffState> = mutableListOf()
     val debuffs: MutableList<DebuffState> = mutableListOf()
     // ─────────────────────────────
@@ -228,41 +257,50 @@ class Player(
     // Converters for persistence
     // ─────────────────────────────
     fun toData(): PlayerData = PlayerData(
-        name = name,
-        gender = gender,
-        eyeColor = eyeColor,
-        hairColor = hairColor,
-        stats = stats.toData(),
-        xp = xp,
-        level = level,
-        knownSpellIds = knownSpellIds
+	name = name,
+	gender = gender,
+	eyeColor = eyeColor,
+	hairColor = hairColor,
+	stats = stats.toData(),
+	xp = xp,
+	level = level,
+	knownSpellIds = knownSpellIds,
+
+	items = items.toList(),
+	gear = gear.toList()
     )
 
     companion object {
         fun default(name: String) = Player(name)
 
 	fun fromData(data: PlayerData): Player {
-            val p = Player(
-                name = data.name,
-                gender = data.gender,
-                eyeColor = data.eyeColor,
-                hairColor = data.hairColor
-            )
-            // populate fields
-            p.stats.life         = data.stats.life
-            p.stats.maxLife      = data.stats.maxLife
-            p.stats.strength     = data.stats.strength
-            p.stats.defense      = data.stats.defense
-            p.stats.constitution = data.stats.constitution
-            p.stats.speed        = data.stats.speed
-            p.stats.dexterity    = data.stats.dexterity
+	    val p = Player(
+		name = data.name,
+		gender = data.gender,
+		eyeColor = data.eyeColor,
+		hairColor = data.hairColor
+	    )
 
-            p.xp = data.xp
-            p.level = data.level
-            // p.status = StatusState()
-            p.knownSpellIds.clear()
-            p.knownSpellIds.addAll(data.knownSpellIds)
-            return p // ✅ explicitly return the populated player
+	    // stats
+	    p.stats.life         = data.stats.life
+	    p.stats.maxLife      = data.stats.maxLife
+	    p.stats.strength     = data.stats.strength
+	    p.stats.defense      = data.stats.defense
+	    p.stats.constitution = data.stats.constitution
+	    p.stats.speed        = data.stats.speed
+	    p.stats.dexterity    = data.stats.dexterity
+
+	    p.xp = data.xp
+	    p.level = data.level
+
+	    p.knownSpellIds.clear()
+	    p.knownSpellIds.addAll(data.knownSpellIds)
+
+	    // NEW inventories
+	    p.items.addAll(data.items)
+	    p.gear.addAll(data.gear)
+
+	    return p
 	}
     }
 }

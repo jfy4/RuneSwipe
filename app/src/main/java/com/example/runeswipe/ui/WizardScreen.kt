@@ -3,7 +3,7 @@ package com.example.runeswipe.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*      // <-- THIS covers remember + mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -44,11 +44,58 @@ fun WizardScreen(player: Player) {
 
             Spacer(Modifier.height(16.dp))
 
-            // TEMP placeholder for future inventory
-            Text("Items:", style = MaterialTheme.typography.titleMedium)
-            Text("- Apprentice Robes")
-            Text("- Wooden Wand")
-            Text("- Pointy Hat")
+            // ————— INVENTORY TABS —————
+            Spacer(Modifier.height(16.dp))
+            InventoryTabs(player)
+        }
+    }
+}
+
+@Composable
+fun InventoryTabs(player: Player) {
+    var selectedTab by remember { mutableStateOf(0) }
+    val tabs = listOf("Items", "Gear")
+
+    Column {
+        TabRow(selectedTabIndex = selectedTab) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = { Text(title) }
+                )
+            }
+        }
+
+        when (selectedTab) {
+            0 -> ItemInventoryView(player)
+            1 -> GearInventoryView(player)
+        }
+    }
+}
+
+@Composable
+fun ItemInventoryView(player: Player) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (player.items.isEmpty()) {
+            Text("No items.", style = MaterialTheme.typography.bodyMedium)
+        } else {
+            player.items.forEach { item ->
+                Text("${item.name} x${item.quantity}")
+            }
+        }
+    }
+}
+
+@Composable
+fun GearInventoryView(player: Player) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (player.gear.isEmpty()) {
+            Text("No gear equipped.", style = MaterialTheme.typography.bodyMedium)
+        } else {
+            player.gear.forEach { g ->
+                Text("${g.slot}: ${g.name}")
+            }
         }
     }
 }
