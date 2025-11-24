@@ -67,13 +67,13 @@ fun CharacterCreationScreen(onDone: (Player) -> Unit) {
             Button(
                 onClick = {
                     if (name.isNotBlank()) {
-                        val player = Player(
-                            name = name,
-                            gender = gender,
-                            eyeColor = eyeColor,
-                            hairColor = hairColor
-                        )
-                        onDone(player)
+			val player = Player.default(
+			    name = name,
+			    gender = gender,
+			    eyeColor = eyeColor,
+			    hairColor = hairColor
+			)
+			onDone(player)
                     }
                 },
                 enabled = name.isNotBlank(),

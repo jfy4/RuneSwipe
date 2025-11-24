@@ -4,8 +4,9 @@
 package com.example.runeswipe.model
 
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+// import androidx.compose.runtime.getValue
+// import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*      // <-- THIS covers remember + mutableStateOf
 import kotlin.math.max
 import kotlin.math.min
 import kotlinx.serialization.Serializable
@@ -190,8 +191,10 @@ data class PlayerData(
     val level: Int = 1,
     val knownSpellIds: Set<String> = setOf("Fehu", "Venhu"),
 
-    val items: List<Item> = emptyList(),
-    val gear: List<Gear> = emptyList()
+    // val items: List<Item> = emptyList(),
+    val itemIds: List<String> = emptyList(),
+    val gearIds: List<String> = emptyList()
+    // val gear: List<Gear> = emptyList()
 )
 
 
@@ -266,12 +269,29 @@ class Player(
 	level = level,
 	knownSpellIds = knownSpellIds,
 
-	items = items.toList(),
-	gear = gear.toList()
+	// items = items.toList(),
+	itemIds = items.map { it.id },
+	gearIds = gear.map { it.id }
+	// gear = gear.toList()
     )
 
     companion object {
-        fun default(name: String) = Player(name)
+	fun default(
+	    name: String,
+	    gender: String = "male",
+	    eyeColor: String = "brown",
+	    hairColor: String = "brown"
+	): Player {
+	    val p = Player(name, gender, eyeColor, hairColor)
+
+	    p.gear.add(GearLibrary.get("apprentice_hat")!!)
+	    p.gear.add(GearLibrary.get("wooden_wand")!!)
+
+	    p.items.add(ItemLibrary.get("potion_small")!!)
+	    p.items.add(ItemLibrary.get("mana_dust")!!)
+
+	    return p
+	}
 
 	fun fromData(data: PlayerData): Player {
 	    val p = Player(
@@ -297,8 +317,16 @@ class Player(
 	    p.knownSpellIds.addAll(data.knownSpellIds)
 
 	    // NEW inventories
-	    p.items.addAll(data.items)
-	    p.gear.addAll(data.gear)
+	    p.items.clear()
+	    data.itemIds.forEach { id ->
+		ItemLibrary.get(id)?.let { p.items.add(it) }
+	    }
+	    // p.items.addAll(data.items)
+	    p.gear.clear()
+	    data.gearIds.forEach { id ->
+		GearLibrary.get(id)?.let { p.gear.add(it) }
+	    }
+	    // p.gear.addAll(data.gear)
 
 	    return p
 	}
