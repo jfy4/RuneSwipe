@@ -100,6 +100,17 @@ enum class DebuffEffect(
     MANA_LEAK("Mana Leak", 3, 3, "Lose MP each turn."),
 }
 
+enum class ItemEffect {
+    NONE,
+
+    HEAL_SMALL,
+    HEAL_MEDIUM,
+
+    RESTORE_MANA_SMALL,
+
+    LEARN_FIREBOLT,
+}
+
 @Serializable
 data class StatsData(
     val life: Int = 30,
@@ -159,8 +170,14 @@ data class Item(
     val id: String,
     val name: String,
     val description: String = "",
+    val effect: ItemEffect = ItemEffect.NONE,
     val quantity: Int = 1
-)
+) {
+    /** Apply the effect using the central ItemEffectManager. */
+    fun use(player: Player): String {
+        return ItemEffectManager.applyEffect(player, this)
+    }
+}
 
 @Serializable
 data class Gear(
@@ -230,6 +247,29 @@ class Player(
         if (!knownSpellIds.contains(spell.id) && SpellTree.canUnlock(this, spell.id)) {
             knownSpellIds.add(spell.id)
         }
+    }
+
+    // -----------------------------
+    // Item usage
+    // -----------------------------
+    fun useItem(item: Item): String {
+	// 1. Apply item effect
+	val result = item.use(this)
+
+	// 2. Remove or decrement item quantity
+	val index = items.indexOf(item)
+
+	if (index >= 0) {
+            val updated = item.copy(quantity = item.quantity - 1)
+
+            if (updated.quantity <= 0) {
+		items.remove(item)
+            } else {
+		items[index] = updated
+            }
+	}
+
+	return result
     }
 
     // ─────────────────────────────
