@@ -3,6 +3,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 import numpy as np
 from torch.optim.lr_scheduler import LambdaLR
 
+
 # ───────────────────────────────────────────────────────────────
 MAX_POINTS = 100
 # ───────────────────────────────────────────────────────────────
@@ -14,13 +15,13 @@ def load_raw_points(path):
 
     pts = []
     for s in strokes:
-        for j,p in enumerate(s):
+        for j, p in enumerate(s):
             x, y, t = p["x"], p["y"], p["t"]
             pen = 1.0 if j == 0 else 0.0
             pts.append([x, y, t, pen])
 
     if len(pts) == 0:
-        return np.zeros((1,4), np.float32)
+        return np.zeros((1, 4), np.float32)
 
     return np.array(pts, np.float32)
 
