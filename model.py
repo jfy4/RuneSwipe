@@ -275,31 +275,31 @@ if __name__ == "__main__":
             torch.save({"state_dict": model.state_dict(),
                         "labels": list(ds.label2id.keys())},
                        "artifacts/rune_seq.pt")
-
-            # ───────────────────────────────────────────────────────────────
-            # Export ONNX model (raw → fully preprocessed → transformer)
-            # ───────────────────────────────────────────────────────────────
-            model.eval()
-
-            # Dummy input: batch size 1, variable-length allowed (e.g. 200 raw points)
-            dummy = torch.zeros(1, 200, 4, dtype=torch.float32).to(device)
-
-            torch.onnx.export(
-                model,
-                dummy,
-                "artifacts/rune_seq.onnx",
-                input_names=["raw_points"],
-                output_names=["logits"],
-                opset_version=17,
-                dynamic_axes={
-                    "raw_points": {1: "num_points"},   # allow variable N
-                    "logits": {0: "batch_size"}
-                }
-            )
-
-            print("Exported ONNX model → artifacts/rune_seq.onnx")
         else:
             bad += 1
             if bad >= patience:
                 print("Early stopping.")
                 break
+    # ───────────────────────────────────────────────────────────────
+    # Export ONNX model (raw → fully preprocessed → transformer)
+    # ───────────────────────────────────────────────────────────────
+    model.eval()
+
+    # Dummy input: batch size 1, variable-length allowed (e.g. 200 raw points)
+    dummy = torch.zeros(1, 200, 4, dtype=torch.float32).to(device)
+
+    torch.onnx.export(
+        model,
+        dummy,
+        "artifacts/rune_seq.onnx",
+        input_names=["raw_points"],
+        output_names=["logits"],
+        opset_version=17,
+        dynamic_axes={
+            "raw_points": {1: "num_points"},   # allow variable N
+            "logits": {0: "batch_size"}
+        }
+    )
+
+    print("Exported ONNX model → artifacts/rune_seq.onnx")
+
