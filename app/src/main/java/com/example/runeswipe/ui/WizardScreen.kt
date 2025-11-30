@@ -49,9 +49,20 @@ fun WizardScreen(player: Player) {
 
             Spacer(Modifier.height(16.dp))
 
-            // ————— INVENTORY TABS —————
-            Spacer(Modifier.height(16.dp))
-            InventoryTabs(player)
+	    // ————— INVENTORY TABS —————
+	    // Give the inventory section all remaining space
+	    Spacer(Modifier.height(16.dp))
+	    Divider(thickness = 1.dp, modifier = Modifier.padding(vertical = 8.dp))
+	    Box(
+		modifier = Modifier
+		    .weight(1f)        // <-- This gives the inventory room to breathe
+		    .fillMaxWidth()
+	    ) {
+		InventoryTabs(player)
+	    }
+            // // ————— INVENTORY TABS —————
+            // Spacer(Modifier.height(16.dp))
+            // InventoryTabs(player)
         }
     }
 }
