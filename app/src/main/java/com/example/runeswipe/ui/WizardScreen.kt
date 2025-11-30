@@ -2,6 +2,11 @@
 package com.example.runeswipe.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*      // <-- THIS covers remember + mutableStateOf
 import androidx.compose.ui.Alignment
@@ -76,14 +81,107 @@ fun InventoryTabs(player: Player) {
 
 @Composable
 fun ItemInventoryView(player: Player) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    var selectedItem by remember { mutableStateOf<com.example.runeswipe.model.Item?>(null) }
+    var showDetailsDialog by remember { mutableStateOf(false) }
+
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxHeight()
+    ) {
+
         if (player.items.isEmpty()) {
-            Text("No items.", style = MaterialTheme.typography.bodyMedium)
-        } else {
-            player.items.forEach { item ->
-                Text("${item.name} x${item.quantity}")
+            item {
+                Text("No items.", style = MaterialTheme.typography.bodyMedium)
+            }
+            return@LazyColumn
+        }
+
+        items(player.items) { item ->
+
+            var menuExpanded by remember { mutableStateOf(false) }
+
+            Box {
+
+                // -----------------------------------------------------
+                // Compact row (like original)
+                // -----------------------------------------------------
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            selectedItem = item
+                            menuExpanded = true
+                        }
+                        .padding(vertical = 6.dp, horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("${item.name} x${item.quantity}")
+                    IconButton(onClick = {
+                        selectedItem = item
+                        menuExpanded = true
+                    }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Item Menu")
+                    }
+                }
+
+                // -----------------------------------------------------
+                // Bubble menu popup
+                // -----------------------------------------------------
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+
+                    // --- USE ---
+                    DropdownMenuItem(
+                        text = { Text("Use") },
+                        onClick = {
+                            selectedItem?.let {
+                                val result = player.useItem(it)
+                                println(result)
+                            }
+                            menuExpanded = false
+                        }
+                    )
+
+                    // --- DETAILS ---
+                    DropdownMenuItem(
+                        text = { Text("Details") },
+                        onClick = {
+                            selectedItem = item
+                            showDetailsDialog = true
+                            menuExpanded = false
+                        }
+                    )
+
+                    // --- DISCARD ---
+                    DropdownMenuItem(
+                        text = { Text("Discard") },
+                        onClick = {
+                            player.items.remove(item)
+                            menuExpanded = false
+                        }
+                    )
+                }
             }
         }
+    }
+
+    // -----------------------------------------------------
+    // Details dialog
+    // -----------------------------------------------------
+    if (showDetailsDialog && selectedItem != null) {
+        AlertDialog(
+            onDismissRequest = { showDetailsDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showDetailsDialog = false }) {
+                    Text("Close")
+                }
+            },
+            title = { Text(selectedItem!!.name) },
+            text = { Text(selectedItem!!.description) }
+        )
     }
 }
 
